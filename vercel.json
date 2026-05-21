@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/examscontrol.html" },
+    { "source": "/(.*)", "destination": "/examscontrol.html" }
+  ]
+}
