@@ -19,19 +19,18 @@
 <body>
   <div id="root"></div>
 
-  <!-- React -->
+  <!-- React 18 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel for JSX -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getFirestore, doc, getDoc, setDoc, collection, onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- Firebase Compat (works in global scope, no ES modules needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+  <script>
+    // Initialize Firebase in global scope
     const firebaseConfig = {
       apiKey: "AIzaSyAZEzzOJjKKzNJBKO4wjI9HUxn2hAteLO0",
       authDomain: "examscontrol-9ef0a.firebaseapp.com",
@@ -41,28 +40,42 @@
       appId: "1:757408733521:web:cd87ce610f7e0c9761db70"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
 
-    // Expose to window for use in JSX
-    window._firestoreApi = { doc, getDoc, setDoc, collection, onSnapshot };
-    window._firebaseDB   = db;
-    window._firebaseReady = true;
+    // Firebase API wrapper (compat style)
+    window._db = db;
 
-    // Signal React app to start
-    window.dispatchEvent(new Event("firebase-ready"));
+    window.fbGet = async function(collection, docId) {
+      try {
+        const snap = await db.collection(collection).doc(docId).get();
+        return snap.exists ? snap.data() : null;
+      } catch(e) { console.error("fbGet error:", e); return null; }
+    };
+
+    window.fbSet = async function(collection, docId, data) {
+      try {
+        await db.collection(collection).doc(docId).set(data);
+      } catch(e) { console.error("fbSet error:", e); }
+    };
+
+    window.fbListen = function(collection, callback) {
+      return db.collection(collection).onSnapshot(snap => {
+        const data = {};
+        snap.forEach(doc => { data[doc.id] = doc.data(); });
+        callback(data);
+      });
+    };
+
+    console.log("Firebase initialized ✓");
   </script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    // Wait for Firebase then render
-    function waitForFirebase(cb) {
-      if (window._firebaseReady) { cb(); return; }
-      window.addEventListener("firebase-ready", cb, { once: true });
-    }
 
-    
 // ═══════════════════════════════════════════
 // ACCOUNTS & PERMISSIONS
 // ═══════════════════════════════════════════
@@ -93,26 +106,8 @@ const STORAGE_SCHOOL   = "exam_school_v1";
 
 const DEFAULT_SCHOOL = { name:"نظام الاختبارات النهائية", sub:"الفصل الدراسي الأول 1446هـ", logo:null };
 
-function loadSchool()  { return _schoolCache || DEFAULT_SCHOOL; }
-async function loadSchoolAsync() {
-  if (!_db) return DEFAULT_SCHOOL;
-  try {
-    const { doc, getDoc } = window._firestoreApi;
-    const snap = await getDoc(doc(_db, "system", "school"));
-    return snap.exists() ? snap.data() : DEFAULT_SCHOOL;
-  } catch { return DEFAULT_SCHOOL; }
-}
-function saveSchool(s) {
-  _schoolCache = s;
-  saveSchoolAsync(s);
-}
-async function saveSchoolAsync(s) {
-  if (!_db) return;
-  try {
-    const { doc, setDoc } = window._firestoreApi;
-    await setDoc(doc(_db, "system", "school"), s);
-  } catch(e) { console.error(e); }
-}
+function loadSchool()  { try { const r=localStorage.getItem(STORAGE_SCHOOL); return r?JSON.parse(r):DEFAULT_SCHOOL; } catch { return DEFAULT_SCHOOL; } }
+function saveSchool(s) { try { localStorage.setItem(STORAGE_SCHOOL, JSON.stringify(s)); } catch {} }
 
 const DEFAULT_ACCOUNTS = [
   { id:"admin",    role:"admin",    name:"مدير المدرسة",              password:"admin@1446", tabs:"all", icon:"🏫" },
@@ -126,36 +121,11 @@ const DEFAULT_ACCOUNTS = [
   { id:"inv2",     role:"invigilator", name:"أ. رنا السهلي",           password:"inv@2222",   tabs:ROLE_TABS.invigilator, icon:"🧑‍🎓", assignedGrades:["1/ب"], assignedStage:"ابتدائي" },
 ];
 
-// Firebase refs (set after init)
-let _db = null;
-let _accountsCache = null;
-let _schoolCache = null;
-
-function setDB(db) { _db = db; }
-
-async function loadAccountsAsync() {
-  if (!_db) return DEFAULT_ACCOUNTS;
-  try {
-    const { doc, getDoc } = window._firestoreApi;
-    const snap = await getDoc(doc(_db, "system", "accounts"));
-    return snap.exists() ? snap.data().list : DEFAULT_ACCOUNTS;
-  } catch { return DEFAULT_ACCOUNTS; }
-}
-
-async function saveAccountsAsync(list) {
-  if (!_db) return;
-  try {
-    const { doc, setDoc } = window._firestoreApi;
-    await setDoc(doc(_db, "system", "accounts"), { list });
-  } catch(e) { console.error(e); }
-}
-
 function loadAccounts() {
-  return _accountsCache || DEFAULT_ACCOUNTS;
+  try { const r=localStorage.getItem(STORAGE_ACCOUNTS); return r?JSON.parse(r):DEFAULT_ACCOUNTS; } catch { return DEFAULT_ACCOUNTS; }
 }
 function saveAccounts(list) {
-  _accountsCache = list;
-  saveAccountsAsync(list);
+  try { localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(list)); } catch {}
 }
 
 function canAccessTab(account, tabId) {
@@ -181,8 +151,8 @@ const ALL_SUBJECTS = {
 // ═══════════════════════════════════════════
 // LOGIN SCREEN
 // ═══════════════════════════════════════════
-function LoginScreen({ onLogin, initAccounts }) {
-  const accounts = initAccounts || loadAccounts();
+function LoginScreen({ onLogin }) {
+  const accounts = loadAccounts();
   const [selRole,    setSelRole]    = React.useState("");
   const [selPerson,  setSelPerson]  = React.useState("");
   const [password,   setPassword]   = React.useState("");
@@ -577,46 +547,23 @@ const GRADES = ALL_GRADES;
 const SUBJECTS_BY_STAGE = ALL_SUBJECTS;
 
 
-function AppWithFirebase() {
-  const [fbReady, setFbReady] = useState(false);
-  const [initSchool, setInitSchool] = useState(DEFAULT_SCHOOL);
-  const [initAccounts, setInitAccounts] = useState(DEFAULT_ACCOUNTS);
-
-  React.useEffect(() => {
-    async function init() {
-      const [sch, acc] = await Promise.all([loadSchoolAsync(), loadAccountsAsync()]);
-      _schoolCache = sch;
-      _accountsCache = acc;
-      setInitSchool(sch);
-      setInitAccounts(acc);
-      setFbReady(true);
-    }
-    init();
-  }, []);
-
-  if (!fbReady) return (
-    <div style={{minHeight:"100vh",background:"#1a2940",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Tajawal,sans-serif",direction:"rtl"}}>
-      <div style={{textAlign:"center",color:"#fff"}}>
-        <div style={{fontSize:40,marginBottom:16}}>🏫</div>
-        <div style={{fontSize:16,fontWeight:600,marginBottom:8}}>جارٍ تحميل البيانات...</div>
-        <div style={{width:48,height:48,border:"4px solid rgba(255,255,255,.2)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 1s linear infinite",margin:"0 auto"}}/>
-      </div>
-    </div>
-  );
-
-  return <App initSchool={initSchool} initAccounts={initAccounts}/>;
-}
-
-
-
-function App({ initSchool, initAccounts }) {
-  // ALL hooks must be at top - no hooks after conditional returns
+export default function App() {
   const [account,     setAccount]     = useState(null);
   const [showAccMgr,  setShowAccMgr]  = useState(false);
-  const [school,      setSchool]      = useState(initSchool || loadSchool());
-  const [tab,         setTab]         = useState("dashboard");
-  const [stage,       setStage]       = useState("ابتدائي");
-  const [selGrade,    setSelGrade]    = useState(GRADES["ابتدائي"][0]);
+  const [school,      setSchool]      = useState(loadSchool());
+
+  const updateSchool = (s) => { saveSchool(s); setSchool(s); };
+
+  // account check handled in render below
+
+  const allowedTabs = TABS.filter(t => canAccessTab(account, t.id)).map(t => ({
+    ...t,
+    label: TAB_LABELS_OVERRIDE[t.id] ? TAB_LABELS_OVERRIDE[t.id] : t.label,
+  }));
+
+  const [tab,setTab]         = useState(allowedTabs[0]?.id || "dashboard");
+  const [selGrade,setSelGrade] = useState((account.assignedGrades && account.assignedGrades[0]) || GRADES["ابتدائي"][0]);
+  const [stage,setStage]     = useState(account.assignedStage || "ابتدائي");
   const [tpls,setTpls]       = useState(initScheduleTpls());
   const [subjects,setSubjects] = useState(initSubjects());
   const [students,setStudents] = useState(initStudents());
@@ -635,42 +582,6 @@ function App({ initSchool, initAccounts }) {
   const [newTplStage,setNewTplStage] = useState("ابتدائي");
   const [newExamRow,setNewExamRow] = useState({subject:"",date:"",day:"الأحد",time:"8:00 ص",duration:90,room:""});
 
-  // ── Computed (after all hooks) ──
-  const updateSchool = (s) => { saveSchool(s); setSchool(s); };
-  if (!account) return <LoginScreen onLogin={setAccount} initAccounts={initAccounts}/>;
-
-  const allowedTabs = TABS.filter(t => canAccessTab(account, t.id)).map(t => ({
-    ...t,
-    label: TAB_LABELS_OVERRIDE[t.id] ? TAB_LABELS_OVERRIDE[t.id] : t.label,
-  }));
-
-  // ── Firebase real-time sync ──
-  React.useEffect(() => {
-    if (!_db) return;
-    const { collection, onSnapshot } = window._firestoreApi;
-    const unsub = onSnapshot(collection(_db, "examData"), (snap) => {
-      snap.forEach(docSnap => {
-        const d = docSnap.data();
-        if (docSnap.id === "tpls")       setTpls(d.value);
-        if (docSnap.id === "subjects")   setSubjects(d.value);
-        if (docSnap.id === "students")   setStudents(d.value);
-        if (docSnap.id === "committees") setCommittees(d.value);
-        if (docSnap.id === "examLife")   setExamLife(d.value);
-        if (docSnap.id === "stepTimes")  setStepTimes(d.value);
-        if (docSnap.id === "published")  setPublished(d.value);
-      });
-    });
-    return () => unsub();
-  }, []);
-
-  const saveToFirebase = React.useCallback(async (key, value) => {
-    if (!_db) return;
-    try {
-      const { doc, setDoc } = window._firestoreApi;
-      await setDoc(doc(_db, "examData", key), { value });
-    } catch(e) { console.error("Firebase save error:", e); }
-  }, []);
-
   const cd  = {background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16};
   const inp = {padding:"7px 10px",border:"0.5px solid #d1d5db",borderRadius:8,fontSize:12,width:"100%",fontFamily:"Tajawal,sans-serif"};
   const btn = (bg="#f3f4f6",col="#374151",br="#d1d5db")=>({padding:"7px 14px",border:`0.5px solid ${br}`,borderRadius:8,background:bg,color:col,fontSize:12,cursor:"pointer",fontFamily:"Tajawal,sans-serif"});
@@ -687,11 +598,11 @@ function App({ initSchool, initAccounts }) {
     const idx=getLifeIdx(key);
     if(idx<FINAL_IDX){
       const next=PAPER_STEPS[idx+1];
-      setExamLife(p=>{const n={...p,[key]:next.id};saveToFirebase("examLife",n);return n;});
-      setStepTimes(p=>{const t={...(p[key]||{}),[next.id]:new Date().toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})};const n={...p,[key]:t};saveToFirebase("stepTimes",n);return n;});
+      setExamLife(p=>({...p,[key]:next.id}));
+      setStepTimes(p=>({...p,[key]:{...(p[key]||{}),[next.id]:new Date().toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})}}));
     }
   };
-  const updateSubjectField=(st,id,f,v)=>setSubjects(p=>{const n={...p,[st]:p[st].map(s=>s.id===id?{...s,[f]:v}:s)};saveToFirebase("subjects",n);return n;});
+  const updateSubjectField=(st,id,f,v)=>setSubjects(p=>({...p,[st]:p[st].map(s=>s.id===id?{...s,[f]:v}:s)}));
   const toggleField=(sid,sub,field)=>{
     setStudents(p=>{
       const ns={...p};ns[stage]={...ns[stage]};
@@ -702,14 +613,14 @@ function App({ initSchool, initAccounts }) {
         if(field==="paperSubmitted")return{...st,paperSubmitted:{...st.paperSubmitted,[sub]:!st.paperSubmitted[sub]}};
         if(field==="paperSolved")return{...st,paperSolved:{...st.paperSolved,[sub]:!st.paperSolved[sub]}};
         return st;
-      });saveToFirebase("students",ns);return ns;
+      });return ns;
     });
   };
-  const updateInv=(gi,field,val)=>{setCommittees(p=>{const ns={...p};ns[stage]={...ns[stage]};const rooms=[...ns[stage][selGrade]];rooms[gi]={...rooms[gi],[field]:val};ns[stage][selGrade]=rooms;saveToFirebase("committees",ns);return ns;});};
+  const updateInv=(gi,field,val)=>{setCommittees(p=>{const ns={...p};ns[stage]={...ns[stage]};const rooms=[...ns[stage][selGrade]];rooms[gi]={...rooms[gi],[field]:val};ns[stage][selGrade]=rooms;return ns;});};
   const attCol=a=>a==="حاضر"?"#1D9E75":a==="غائب"?"#E24B4A":"#EF9F27";
   const attBg =a=>a==="حاضر"?"#E4F5EE":a==="غائب"?"#FCEBEB":"#FEF3E2";
 
-  const deleteTpl=(st,id)=>setTpls(p=>{const n={...p,[st]:p[st].filter(t=>t.id!==id)};saveToFirebase("tpls",n);return n;});
+  const deleteTpl=(st,id)=>setTpls(p=>({...p,[st]:p[st].filter(t=>t.id!==id)}));
   const cloneTpl=(st,tpl)=>{const clone={...tpl,id:"tpl-"+Date.now(),name:tpl.name+" (نسخة)",appliedTo:[],exams:tpl.exams.map(e=>({...e,id:"e"+Math.random()}))};setTpls(p=>({...p,[st]:[...p[st],clone]}));};
   const createTpl=()=>{if(!newTplName)return;const t={id:"tpl-"+Date.now(),name:newTplName,appliedTo:[],exams:[],_isNew:true};setShowNewTpl(false);setNewTplName("");setEditTpl({...t,stage:newTplStage});};
   const saveTpl=(tpl)=>{
@@ -722,7 +633,6 @@ function App({ initSchool, initAccounts }) {
       } else {
         ns[tpl.stage]=ns[tpl.stage].map(t=>t.id===tpl.id?tpl:t);
       }
-      saveToFirebase("tpls", ns);
       return ns;
     });
     setEditTpl(null);
@@ -837,6 +747,8 @@ function App({ initSchool, initAccounts }) {
       <div style={{fontSize:10,color:"#9ca3af"}}>🟢 = يوجد جدول</div>
     </div>
   );
+
+  if (!account) return <LoginScreen onLogin={setAccount}/>;
 
   return (
     <div style={{fontFamily:"Tajawal,sans-serif",direction:"rtl",minHeight:"100vh",background:"#f3f4f6"}}>
@@ -1270,7 +1182,7 @@ function App({ initSchool, initAccounts }) {
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><div style={{fontSize:13,fontWeight:600}}>{ex.subject}</div><span style={bdg(isPub?"#1D9E75":canP?"#EF9F27":"#9ca3af",isPub?"#E4F5EE":canP?"#FEF3E2":"#f3f4f6")}>{isPub?"✅ نُشرت":canP?"جاهز":"في الانتظار"}</span></div>
                   <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>{PAPER_STEPS[li]?.icon} {PAPER_STEPS[li]?.label}</div>
                   <div style={{height:4,background:"#f3f4f6",borderRadius:2,overflow:"hidden",marginBottom:10}}><div style={{width:(li/FINAL_IDX*100)+"%",height:"100%",background:stC[stage],borderRadius:2}}/></div>
-                  {!isPub&&canP&&<button onClick={()=>setPublished(p=>{const n={...p,[key]:true};saveToFirebase("published",n);return n;})} style={{...btn(stC[stage],"#fff",stC[stage]),width:"100%"}}>📢 نشر النتائج</button>}
+                  {!isPub&&canP&&<button onClick={()=>setPublished(p=>({...p,[key]:true}))} style={{...btn(stC[stage],"#fff",stC[stage]),width:"100%"}}>📢 نشر النتائج</button>}
                   {isPub&&<div style={{fontSize:11,color:"#1D9E75",padding:"6px 10px",background:"#f0fdf4",borderRadius:8}}>✅ تم الإعلان عبر نور</div>}
                   {!canP&&!isPub&&<div style={{fontSize:11,color:"#9ca3af"}}>في انتظار اكتمال المراحل</div>}
                 </div>
@@ -1389,11 +1301,9 @@ function App({ initSchool, initAccounts }) {
 }
 
 
-    waitForFirebase(() => {
-      if (window._firebaseDB) setDB(window._firebaseDB);
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<AppWithFirebase />);
-    });
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<AppWithFirebase/>);
   </script>
 </body>
 </html>
