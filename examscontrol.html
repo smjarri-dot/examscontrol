@@ -23,7 +23,6 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <!-- Babel -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- Firebase Compat (works in global scope, no ES modules needed) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -1176,6 +1175,259 @@ function AccountsManager({
 // Alias for backward compatibility
 const GRADES = ALL_GRADES;
 const SUBJECTS_BY_STAGE = ALL_SUBJECTS;
+const initScheduleTpls = () => ({
+  ابتدائي: [{
+    id: "tpl-ab-1",
+    name: "جدول الصفوف 1-4",
+    appliedTo: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الاجتماعيات",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }]
+  }, {
+    id: "tpl-ab-2",
+    name: "جدول الصفوف 5-6",
+    appliedTo: ["5/أ", "5/ب", "6/أ", "6/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الاجتماعيات",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e6",
+      subject: "القرآن الكريم",
+      date: "1446/12/26",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 60,
+      room: ""
+    }]
+  }],
+  متوسط: [{
+    id: "tpl-mid-1",
+    name: "جدول المرحلة المتوسطة",
+    appliedTo: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "الفقه",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 60,
+      room: ""
+    }]
+  }],
+  ثانوي: [{
+    id: "tpl-sec-1",
+    name: "جدول المرحلة الثانوية",
+    appliedTo: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "الفيزياء",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الكيمياء",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }]
+  }]
+});
+const initSubjects = () => {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = SUBJECTS_BY_STAGE[st].map((name, i) => ({
+      id: i + 1,
+      name,
+      teacher: INV_POOL[i % INV_POOL.length],
+      supervisor: INV_POOL[(i + 3) % INV_POOL.length],
+      curriculumDone: [100, 95, 88, 100, 72, 100, 60, 85][i % 8],
+      questionStatus: ["معتمدة", "قيد المراجعة", "مسلّمة", "معتمدة", "لم تسلّم", "مطبوعة", "لم تسلّم", "معتمدة"][i % 8],
+      submitted: [true, true, true, true, false, true, false, true][i % 8]
+    }));
+  });
+  return r;
+};
+const initStudents = () => {
+  const names = ["محمد القحطاني", "أحمد الزهراني", "سلمى العتيبي", "عبدالله الدوسري", "نورة السهلي", "فيصل المطيري", "ريم الخالدي", "لانا العمري"];
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = names.slice(0, 6).map((name, i) => ({
+        id: i + 1,
+        name,
+        num: `${2024 + i}`,
+        grade: g,
+        attendance: {},
+        paperReceived: {},
+        paperSubmitted: {},
+        paperSolved: {}
+      }));
+    });
+  });
+  return r;
+};
+const initCommittees = () => {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = [{
+        room: "",
+        inv1: INV_POOL[0],
+        inv2: INV_POOL[1],
+        inv1Present: null,
+        inv2Present: null,
+        inv1Note: "",
+        inv2Note: "",
+        inv1Time: "",
+        inv2Time: ""
+      }];
+    });
+  });
+  return r;
+};
+const getGradeExams = (tpls, stage, grade) => {
+  const tpl = (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
+  return tpl ? tpl.exams : [];
+};
+const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
 function App() {
   const [account, setAccount] = useState(null);
   const [showAccMgr, setShowAccMgr] = useState(false);
@@ -4133,13 +4385,12 @@ function App() {
   }, "\u0625\u0644\u063A\u0627\u0621")))));
 }
 
+// App defined above
+
 // Render
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(/*#__PURE__*/React.createElement(AppWithFirebase, null));
+root.render(React.createElement(App, null));
 
-    // Render
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(React.createElement(App, null));
 </script>
 </body>
 </html>
