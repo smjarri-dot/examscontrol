@@ -17,3216 +17,764 @@
   <div id="root"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-type="module">
+const useState = React.useState;
+const useEffect = React.useEffect;
+const useRef = React.useRef;
+const useCallback = React.useCallback;
+
+
 // ===== CONSTANTS =====
-const STAGES = ["ابتدائي", "متوسط", "ثانوي"];
+const STAGES = ["ابتدائي","متوسط","ثانوي"];
 const GRADES = {
-  ابتدائي: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
-  متوسط: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
-  ثانوي: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
+  ابتدائي:["1/أ","1/ب","2/أ","2/ب","3/أ","3/ب","4/أ","4/ب","5/أ","5/ب","6/أ","6/ب"],
+  متوسط:  ["1م/أ","1م/ب","2م/أ","2م/ب","3م/أ","3م/ب"],
+  ثانوي:  ["1ث/أ","1ث/ب","2ث/أ","2ث/ب","3ث/أ","3ث/ب"],
 };
 const SUBJECTS_BY_STAGE = {
-  ابتدائي: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "التربية البدنية"],
-  متوسط: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "الفقه"],
-  ثانوي: ["التوحيد", "اللغة العربية", "الرياضيات", "الفيزياء", "الكيمياء", "الأحياء", "اللغة الإنجليزية", "الحاسب"]
+  ابتدائي:["القرآن الكريم","اللغة العربية","الرياضيات","العلوم","الاجتماعيات","اللغة الإنجليزية","الحاسب","التربية البدنية"],
+  متوسط:  ["القرآن الكريم","اللغة العربية","الرياضيات","العلوم","الاجتماعيات","اللغة الإنجليزية","الحاسب","الفقه"],
+  ثانوي:  ["التوحيد","اللغة العربية","الرياضيات","الفيزياء","الكيمياء","الأحياء","اللغة الإنجليزية","الحاسب"],
 };
-const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
-const INV_POOL = ["أ. خالد العمري", "أ. فهد الشمري", "أ. نجلاء الحربي", "أ. محمد الدوسري", "أ. سلمى الزهراني", "أ. عمر المالكي", "أ. رنا السهلي", "أ. لانا العمري", "أ. ريم الشمري", "أ. عبدالله القحطاني", "أ. فيصل المطيري", "أ. هند الحربي"];
-const Q_STATUSES = ["لم تسلّم", "مسلّمة", "قيد المراجعة", "معتمدة", "مطبوعة"];
-const QSC = {
-  "لم تسلّم": "#E24B4A",
-  "مسلّمة": "#EF9F27",
-  "قيد المراجعة": "#378ADD",
-  "معتمدة": "#1D9E75",
-  "مطبوعة": "#534AB7"
-};
-const QSB = {
-  "لم تسلّم": "#FCEBEB",
-  "مسلّمة": "#FEF3E2",
-  "قيد المراجعة": "#E6F1FB",
-  "معتمدة": "#E4F5EE",
-  "مطبوعة": "#EEEDFE"
-};
-const PAPER_STEPS = [{
-  id: "sealed",
-  label: "المظاريف مختومة",
-  icon: "🔒"
-}, {
-  id: "opened",
-  label: "فتح المظاريف",
-  icon: "✉️"
-}, {
-  id: "received",
-  label: "استلام الطلاب",
-  icon: "📋"
-}, {
-  id: "solving",
-  label: "الحل والمراقبة",
-  icon: "✍️"
-}, {
-  id: "submitted",
-  label: "تسليم الأوراق",
-  icon: "📤"
-}, {
-  id: "verified",
-  label: "التحقق من الأوراق",
-  icon: "🔍"
-}, {
-  id: "corrected",
-  label: "التصحيح",
-  icon: "✏️"
-}, {
-  id: "reviewed",
-  label: "مراجعة التصحيح",
-  icon: "👁️"
-}, {
-  id: "recorded",
-  label: "الرصد في نور",
-  icon: "💻"
-}, {
-  id: "audited",
-  label: "التدقيق",
-  icon: "✅"
-}, {
-  id: "published",
-  label: "إعلان النتائج",
-  icon: "📢"
-}];
-const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
-const FINAL_IDX = PAPER_STEPS.length - 1;
-const MEDALS = ["🥇", "🥈", "🥉"];
-const RATING_OPTIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
-const RATING_COLOR = {
-  "ممتاز": "#1D9E75",
-  "جيد جداً": "#378ADD",
-  "جيد": "#534AB7",
-  "مقبول": "#EF9F27",
-  "ضعيف": "#E24B4A"
-};
-const stC = {
-  ابتدائي: "#1D9E75",
-  متوسط: "#378ADD",
-  ثانوي: "#534AB7"
-};
-const stB = {
-  ابتدائي: "#E4F5EE",
-  متوسط: "#E6F1FB",
-  ثانوي: "#EEEDFE"
-};
+const DAYS = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+const INV_POOL = ["أ. خالد العمري","أ. فهد الشمري","أ. نجلاء الحربي","أ. محمد الدوسري","أ. سلمى الزهراني","أ. عمر المالكي","أ. رنا السهلي","أ. لانا العمري","أ. ريم الشمري","أ. عبدالله القحطاني","أ. فيصل المطيري","أ. هند الحربي"];
+const Q_STATUSES = ["لم تسلّم","مسلّمة","قيد المراجعة","معتمدة","مطبوعة"];
+const QSC = {"لم تسلّم":"#E24B4A","مسلّمة":"#EF9F27","قيد المراجعة":"#378ADD","معتمدة":"#1D9E75","مطبوعة":"#534AB7"};
+const QSB = {"لم تسلّم":"#FCEBEB","مسلّمة":"#FEF3E2","قيد المراجعة":"#E6F1FB","معتمدة":"#E4F5EE","مطبوعة":"#EEEDFE"};
+const PAPER_STEPS = [
+  {id:"sealed",   label:"المظاريف مختومة",   icon:"🔒"},
+  {id:"opened",   label:"فتح المظاريف",       icon:"✉️"},
+  {id:"received", label:"استلام الطلاب",      icon:"📋"},
+  {id:"solving",  label:"الحل والمراقبة",     icon:"✍️"},
+  {id:"submitted",label:"تسليم الأوراق",      icon:"📤"},
+  {id:"verified", label:"التحقق من الأوراق", icon:"🔍"},
+  {id:"corrected",label:"التصحيح",            icon:"✏️"},
+  {id:"reviewed", label:"مراجعة التصحيح",    icon:"👁️"},
+  {id:"recorded", label:"الرصد في نور",       icon:"💻"},
+  {id:"audited",  label:"التدقيق",            icon:"✅"},
+  {id:"published",label:"إعلان النتائج",      icon:"📢"},
+];
+const TARGET_IDX = PAPER_STEPS.findIndex(s=>s.id==="recorded");
+const FINAL_IDX  = PAPER_STEPS.length-1;
+const MEDALS = ["🥇","🥈","🥉"];
+const RATING_OPTIONS = ["ممتاز","جيد جداً","جيد","مقبول","ضعيف"];
+const RATING_COLOR   = {"ممتاز":"#1D9E75","جيد جداً":"#378ADD","جيد":"#534AB7","مقبول":"#EF9F27","ضعيف":"#E24B4A"};
+const stC = {ابتدائي:"#1D9E75",متوسط:"#378ADD",ثانوي:"#534AB7"};
+const stB = {ابتدائي:"#E4F5EE",متوسط:"#E6F1FB",ثانوي:"#EEEDFE"};
+
 const initScheduleTpls = () => ({
-  ابتدائي: [{
-    id: "tpl-ab-1",
-    name: "جدول الصفوف 1-4",
-    appliedTo: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الاجتماعيات",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }]
-  }, {
-    id: "tpl-ab-2",
-    name: "جدول الصفوف 5-6",
-    appliedTo: ["5/أ", "5/ب", "6/أ", "6/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الاجتماعيات",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e6",
-      subject: "القرآن الكريم",
-      date: "1446/12/26",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 60,
-      room: ""
-    }]
-  }],
-  متوسط: [{
-    id: "tpl-mid-1",
-    name: "جدول المرحلة المتوسطة",
-    appliedTo: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "الفقه",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 60,
-      room: ""
-    }]
-  }],
-  ثانوي: [{
-    id: "tpl-sec-1",
-    name: "جدول المرحلة الثانوية",
-    appliedTo: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "الفيزياء",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الكيمياء",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }]
-  }]
+  ابتدائي:[
+    { id:"tpl-ab-1", name:"جدول الصفوف 1-4", appliedTo:["1/أ","1/ب","2/أ","2/ب","3/أ","3/ب","4/أ","4/ب"],
+      exams:[
+        {id:"e1",subject:"اللغة العربية",   date:"1446/12/15",day:"الأحد",   time:"8:00 ص",duration:120,room:""},
+        {id:"e2",subject:"الرياضيات",       date:"1446/12/17",day:"الثلاثاء",time:"8:00 ص",duration:120,room:""},
+        {id:"e3",subject:"العلوم",          date:"1446/12/19",day:"الخميس",  time:"8:00 ص",duration:90, room:""},
+        {id:"e4",subject:"الاجتماعيات",    date:"1446/12/22",day:"الأحد",   time:"8:00 ص",duration:90, room:""},
+        {id:"e5",subject:"اللغة الإنجليزية",date:"1446/12/24",day:"الثلاثاء",time:"8:00 ص",duration:90, room:""},
+      ]},
+    { id:"tpl-ab-2", name:"جدول الصفوف 5-6", appliedTo:["5/أ","5/ب","6/أ","6/ب"],
+      exams:[
+        {id:"e1",subject:"اللغة العربية",   date:"1446/12/15",day:"الأحد",   time:"8:00 ص",duration:120,room:""},
+        {id:"e2",subject:"الرياضيات",       date:"1446/12/17",day:"الثلاثاء",time:"8:00 ص",duration:120,room:""},
+        {id:"e3",subject:"العلوم",          date:"1446/12/19",day:"الخميس",  time:"8:00 ص",duration:90, room:""},
+        {id:"e4",subject:"الاجتماعيات",    date:"1446/12/22",day:"الأحد",   time:"8:00 ص",duration:90, room:""},
+        {id:"e5",subject:"اللغة الإنجليزية",date:"1446/12/24",day:"الثلاثاء",time:"8:00 ص",duration:90, room:""},
+        {id:"e6",subject:"القرآن الكريم",  date:"1446/12/26",day:"الخميس",  time:"8:00 ص",duration:60, room:""},
+      ]},
+  ],
+  متوسط:[
+    { id:"tpl-mid-1", name:"جدول المرحلة المتوسطة", appliedTo:["1م/أ","1م/ب","2م/أ","2م/ب","3م/أ","3م/ب"],
+      exams:[
+        {id:"e1",subject:"اللغة العربية",   date:"1446/12/15",day:"الأحد",   time:"8:00 ص",duration:120,room:""},
+        {id:"e2",subject:"الرياضيات",       date:"1446/12/17",day:"الثلاثاء",time:"8:00 ص",duration:120,room:""},
+        {id:"e3",subject:"العلوم",          date:"1446/12/19",day:"الخميس",  time:"8:00 ص",duration:90, room:""},
+        {id:"e4",subject:"اللغة الإنجليزية",date:"1446/12/22",day:"الأحد",   time:"8:00 ص",duration:90, room:""},
+        {id:"e5",subject:"الفقه",           date:"1446/12/24",day:"الثلاثاء",time:"8:00 ص",duration:60, room:""},
+      ]},
+  ],
+  ثانوي:[
+    { id:"tpl-sec-1", name:"جدول المرحلة الثانوية", appliedTo:["1ث/أ","1ث/ب","2ث/أ","2ث/ب","3ث/أ","3ث/ب"],
+      exams:[
+        {id:"e1",subject:"اللغة العربية",   date:"1446/12/15",day:"الأحد",   time:"8:00 ص",duration:120,room:""},
+        {id:"e2",subject:"الرياضيات",       date:"1446/12/17",day:"الثلاثاء",time:"8:00 ص",duration:120,room:""},
+        {id:"e3",subject:"الفيزياء",        date:"1446/12/19",day:"الخميس",  time:"8:00 ص",duration:90, room:""},
+        {id:"e4",subject:"الكيمياء",        date:"1446/12/22",day:"الأحد",   time:"8:00 ص",duration:90, room:""},
+        {id:"e5",subject:"اللغة الإنجليزية",date:"1446/12/24",day:"الثلاثاء",time:"8:00 ص",duration:90, room:""},
+      ]},
+  ],
 });
-const initSubjects = () => {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = SUBJECTS_BY_STAGE[st].map((name, i) => ({
-      id: i + 1,
-      name,
-      teacher: INV_POOL[i % INV_POOL.length],
-      supervisor: INV_POOL[(i + 3) % INV_POOL.length],
-      curriculumDone: [100, 95, 88, 100, 72, 100, 60, 85][i % 8],
-      questionStatus: ["معتمدة", "قيد المراجعة", "مسلّمة", "معتمدة", "لم تسلّم", "مطبوعة", "لم تسلّم", "معتمدة"][i % 8],
-      submitted: [true, true, true, true, false, true, false, true][i % 8]
-    }));
-  });
-  return r;
-};
-const initStudents = () => {
-  const names = ["محمد القحطاني", "أحمد الزهراني", "سلمى العتيبي", "عبدالله الدوسري", "نورة السهلي", "فيصل المطيري", "ريم الخالدي", "لانا العمري"];
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = names.slice(0, 6).map((name, i) => ({
-        id: i + 1,
-        name,
-        num: `${2024 + i}`,
-        grade: g,
-        attendance: {},
-        paperReceived: {},
-        paperSubmitted: {},
-        paperSolved: {}
-      }));
-    });
-  });
-  return r;
-};
-const initCommittees = () => {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = [{
-        room: "",
-        inv1: INV_POOL[0],
-        inv2: INV_POOL[1],
-        inv1Present: null,
-        inv2Present: null,
-        inv1Note: "",
-        inv2Note: "",
-        inv1Time: "",
-        inv2Time: ""
-      }];
-    });
-  });
-  return r;
-};
-const TABS = [{
-  id: "dashboard",
-  icon: "⊞",
-  label: "الداش بورد"
-}, {
-  id: "schedules",
-  icon: "📅",
-  label: "جداول الاختبارات"
-}, {
-  id: "curriculum",
-  icon: "📚",
-  label: "اكتمال المنهج"
-}, {
-  id: "questions",
-  icon: "📝",
-  label: "الأسئلة والاعتماد"
-}, {
-  id: "committees",
-  icon: "👥",
-  label: "لجان الاختبار"
-}, {
-  id: "invigilators",
-  icon: "🕐",
-  label: "مراقبة المراقبين"
-}, {
-  id: "attendance",
-  icon: "✔️",
-  label: "حضور وأوراق الطلاب"
-}, {
-  id: "daily_report",
-  icon: "📊",
-  label: "التقرير اليومي"
-}, {
-  id: "lifecycle",
-  icon: "🔄",
-  label: "خط السير"
-}, {
-  id: "ranking",
-  icon: "🏆",
-  label: "التنافسي"
-}, {
-  id: "publish",
-  icon: "📢",
-  label: "النشر"
-}];
+
+const initSubjects = () => { const r={}; STAGES.forEach(st=>{r[st]=SUBJECTS_BY_STAGE[st].map((name,i)=>({id:i+1,name,teacher:INV_POOL[i%INV_POOL.length],supervisor:INV_POOL[(i+3)%INV_POOL.length],curriculumDone:[100,95,88,100,72,100,60,85][i%8],questionStatus:["معتمدة","قيد المراجعة","مسلّمة","معتمدة","لم تسلّم","مطبوعة","لم تسلّم","معتمدة"][i%8],submitted:[true,true,true,true,false,true,false,true][i%8]}));}); return r; };
+const initStudents = () => { const names=["محمد القحطاني","أحمد الزهراني","سلمى العتيبي","عبدالله الدوسري","نورة السهلي","فيصل المطيري","ريم الخالدي","لانا العمري"]; const r={}; STAGES.forEach(st=>{r[st]={};GRADES[st].forEach(g=>{r[st][g]=names.slice(0,6).map((name,i)=>({id:i+1,name,num:`${2024+i}`,grade:g,attendance:{},paperReceived:{},paperSubmitted:{},paperSolved:{}}));});}); return r; };
+const initCommittees = () => { const r={}; STAGES.forEach(st=>{r[st]={};GRADES[st].forEach(g=>{r[st][g]=[{room:"",inv1:INV_POOL[0],inv2:INV_POOL[1],inv1Present:null,inv2Present:null,inv1Note:"",inv2Note:"",inv1Time:"",inv2Time:""}];});}); return r; };
+
+const TABS = [
+  {id:"dashboard",   icon:"⊞", label:"الداش بورد"},
+  {id:"schedules",   icon:"📅", label:"جداول الاختبارات"},
+  {id:"curriculum",  icon:"📚", label:"اكتمال المنهج"},
+  {id:"questions",   icon:"📝", label:"الأسئلة والاعتماد"},
+  {id:"committees",  icon:"👥", label:"لجان الاختبار"},
+  {id:"invigilators",icon:"🕐", label:"مراقبة المراقبين"},
+  {id:"attendance",  icon:"✔️", label:"حضور وأوراق الطلاب"},
+  {id:"daily_report",icon:"📊", label:"التقرير اليومي"},
+  {id:"lifecycle",   icon:"🔄", label:"خط السير"},
+  {id:"ranking",     icon:"🏆", label:"التنافسي"},
+  {id:"publish",     icon:"📢", label:"النشر"},
+];
+
 const getGradeExams = (tpls, stage, grade) => {
-  const tpl = (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
+  const tpl = (tpls[stage]||[]).find(t=>t.appliedTo.includes(grade));
   return tpl ? tpl.exams : [];
 };
-const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
+const getGradeTpl = (tpls, stage, grade) => (tpls[stage]||[]).find(t=>t.appliedTo.includes(grade));
+
 function App() {
-  const [tab, setTab] = useState("schedules");
-  const [stage, setStage] = useState("ابتدائي");
-  const [selGrade, setSelGrade] = useState(GRADES["ابتدائي"][0]);
-  const [tpls, setTpls] = useState(initScheduleTpls());
-  const [subjects, setSubjects] = useState(initSubjects());
-  const [students, setStudents] = useState(initStudents());
-  const [committees, setCommittees] = useState(initCommittees());
-  const [examLife, setExamLife] = useState({});
-  const [stepTimes, setStepTimes] = useState({});
-  const [published, setPublished] = useState({});
-  const [selExam, setSelExam] = useState(null);
-  const [attExamKey, setAttExamKey] = useState(null);
-  const [editSubj, setEditSubj] = useState(null);
-  const [dailyReport, setDailyReport] = useState({
-    date: "1446/12/15",
-    supervisor: "أ. أحمد الغامدي",
-    generalRating: "جيد جداً",
-    notes: "",
-    rooms: []
-  });
-  const [reportSaved, setReportSaved] = useState(false);
-  const [editTpl, setEditTpl] = useState(null);
-  const [showNewTpl, setShowNewTpl] = useState(false);
-  const [newTplName, setNewTplName] = useState("");
-  const [newTplStage, setNewTplStage] = useState("ابتدائي");
-  const [newExamRow, setNewExamRow] = useState({
-    subject: "",
-    date: "",
-    day: "الأحد",
-    time: "8:00 ص",
-    duration: 90,
-    room: ""
-  });
-  const cd = {
-    background: "#fff",
-    border: "0.5px solid #e5e7eb",
-    borderRadius: 12,
-    padding: 16
-  };
-  const inp = {
-    padding: "7px 10px",
-    border: "0.5px solid #d1d5db",
-    borderRadius: 8,
-    fontSize: 12,
-    width: "100%",
-    fontFamily: "Tajawal,sans-serif"
-  };
-  const btn = (bg = "#f3f4f6", col = "#374151", br = "#d1d5db") => ({
-    padding: "7px 14px",
-    border: `0.5px solid ${br}`,
-    borderRadius: 8,
-    background: bg,
-    color: col,
-    fontSize: 12,
-    cursor: "pointer",
-    fontFamily: "Tajawal,sans-serif"
-  });
-  const bdg = (col, bg) => ({
-    display: "inline-flex",
-    padding: "2px 9px",
-    borderRadius: 20,
-    fontSize: 11,
-    fontWeight: 500,
-    color: col,
-    background: bg
-  });
-  const curStudents = students[stage]?.[selGrade] || [];
-  const curSubjects = subjects[stage] || [];
-  const curComm = committees[stage]?.[selGrade] || [];
-  const curExams = getGradeExams(tpls, stage, selGrade);
-  const curTpl = getGradeTpl(tpls, stage, selGrade);
-  const getLifeIdx = key => {
-    const i = PAPER_STEPS.findIndex(s => s.id === (examLife[key] || "sealed"));
-    return i < 0 ? 0 : i;
-  };
-  const advanceLife = key => {
-    const idx = getLifeIdx(key);
-    if (idx < FINAL_IDX) {
-      const next = PAPER_STEPS[idx + 1];
-      setExamLife(p => ({
-        ...p,
-        [key]: next.id
-      }));
-      setStepTimes(p => ({
-        ...p,
-        [key]: {
-          ...(p[key] || {}),
-          [next.id]: new Date().toLocaleTimeString("ar-SA", {
-            hour: "2-digit",
-            minute: "2-digit"
-          })
-        }
-      }));
+  const [tab,setTab]         = useState("schedules");
+  const [stage,setStage]     = useState("ابتدائي");
+  const [selGrade,setSelGrade] = useState(GRADES["ابتدائي"][0]);
+  const [tpls,setTpls]       = useState(initScheduleTpls());
+  const [subjects,setSubjects] = useState(initSubjects());
+  const [students,setStudents] = useState(initStudents());
+  const [committees,setCommittees] = useState(initCommittees());
+  const [examLife,setExamLife]   = useState({});
+  const [stepTimes,setStepTimes] = useState({});
+  const [published,setPublished] = useState({});
+  const [selExam,setSelExam]     = useState(null);
+  const [attExamKey,setAttExamKey] = useState(null);
+  const [editSubj,setEditSubj]   = useState(null);
+  const [dailyReport,setDailyReport] = useState({date:"1446/12/15",supervisor:"أ. أحمد الغامدي",generalRating:"جيد جداً",notes:"",rooms:[]});
+  const [reportSaved,setReportSaved] = useState(false);
+  const [editTpl,setEditTpl]   = useState(null);
+  const [showNewTpl,setShowNewTpl] = useState(false);
+  const [newTplName,setNewTplName] = useState("");
+  const [newTplStage,setNewTplStage] = useState("ابتدائي");
+  const [newExamRow,setNewExamRow] = useState({subject:"",date:"",day:"الأحد",time:"8:00 ص",duration:90,room:""});
+
+  const cd  = {background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16};
+  const inp = {padding:"7px 10px",border:"0.5px solid #d1d5db",borderRadius:8,fontSize:12,width:"100%",fontFamily:"Tajawal,sans-serif"};
+  const btn = (bg="#f3f4f6",col="#374151",br="#d1d5db")=>({padding:"7px 14px",border:`0.5px solid ${br}`,borderRadius:8,background:bg,color:col,fontSize:12,cursor:"pointer",fontFamily:"Tajawal,sans-serif"});
+  const bdg = (col,bg)=>({display:"inline-flex",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:500,color:col,background:bg});
+
+  const curStudents = students[stage]?.[selGrade]||[];
+  const curSubjects = subjects[stage]||[];
+  const curComm     = committees[stage]?.[selGrade]||[];
+  const curExams    = getGradeExams(tpls,stage,selGrade);
+  const curTpl      = getGradeTpl(tpls,stage,selGrade);
+
+  const getLifeIdx = key=>{const i=PAPER_STEPS.findIndex(s=>s.id===(examLife[key]||"sealed"));return i<0?0:i;};
+  const advanceLife = key=>{
+    const idx=getLifeIdx(key);
+    if(idx<FINAL_IDX){
+      const next=PAPER_STEPS[idx+1];
+      setExamLife(p=>({...p,[key]:next.id}));
+      setStepTimes(p=>({...p,[key]:{...(p[key]||{}),[next.id]:new Date().toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})}}));
     }
   };
-  const updateSubjectField = (st, id, f, v) => setSubjects(p => ({
-    ...p,
-    [st]: p[st].map(s => s.id === id ? {
-      ...s,
-      [f]: v
-    } : s)
-  }));
-  const toggleField = (sid, sub, field) => {
-    setStudents(p => {
-      const ns = {
-        ...p
-      };
-      ns[stage] = {
-        ...ns[stage]
-      };
-      ns[stage][selGrade] = ns[stage][selGrade].map(st => {
-        if (st.id !== sid) return st;
-        if (field === "attendance") {
-          const cy = {
-            حاضر: "غائب",
-            غائب: "متأخر",
-            متأخر: "حاضر"
-          };
-          const cur = st.attendance[sub] || "حاضر";
-          return {
-            ...st,
-            attendance: {
-              ...st.attendance,
-              [sub]: cy[cur] || "حاضر"
-            }
-          };
-        }
-        if (field === "paperReceived") {
-          const cur = st.paperReceived[sub] || "لم يستلم";
-          return {
-            ...st,
-            paperReceived: {
-              ...st.paperReceived,
-              [sub]: cur === "استلم" ? "لم يستلم" : "استلم"
-            }
-          };
-        }
-        if (field === "paperSubmitted") return {
-          ...st,
-          paperSubmitted: {
-            ...st.paperSubmitted,
-            [sub]: !st.paperSubmitted[sub]
-          }
-        };
-        if (field === "paperSolved") return {
-          ...st,
-          paperSolved: {
-            ...st.paperSolved,
-            [sub]: !st.paperSolved[sub]
-          }
-        };
+  const updateSubjectField=(st,id,f,v)=>setSubjects(p=>({...p,[st]:p[st].map(s=>s.id===id?{...s,[f]:v}:s)}));
+  const toggleField=(sid,sub,field)=>{
+    setStudents(p=>{
+      const ns={...p};ns[stage]={...ns[stage]};
+      ns[stage][selGrade]=ns[stage][selGrade].map(st=>{
+        if(st.id!==sid)return st;
+        if(field==="attendance"){const cy={حاضر:"غائب",غائب:"متأخر",متأخر:"حاضر"};const cur=st.attendance[sub]||"حاضر";return{...st,attendance:{...st.attendance,[sub]:cy[cur]||"حاضر"}};}
+        if(field==="paperReceived"){const cur=st.paperReceived[sub]||"لم يستلم";return{...st,paperReceived:{...st.paperReceived,[sub]:cur==="استلم"?"لم يستلم":"استلم"}};}
+        if(field==="paperSubmitted")return{...st,paperSubmitted:{...st.paperSubmitted,[sub]:!st.paperSubmitted[sub]}};
+        if(field==="paperSolved")return{...st,paperSolved:{...st.paperSolved,[sub]:!st.paperSolved[sub]}};
         return st;
-      });
-      return ns;
+      });return ns;
     });
   };
-  const updateInv = (gi, field, val) => {
-    setCommittees(p => {
-      const ns = {
-        ...p
-      };
-      ns[stage] = {
-        ...ns[stage]
-      };
-      const rooms = [...ns[stage][selGrade]];
-      rooms[gi] = {
-        ...rooms[gi],
-        [field]: val
-      };
-      ns[stage][selGrade] = rooms;
-      return ns;
-    });
-  };
-  const attCol = a => a === "حاضر" ? "#1D9E75" : a === "غائب" ? "#E24B4A" : "#EF9F27";
-  const attBg = a => a === "حاضر" ? "#E4F5EE" : a === "غائب" ? "#FCEBEB" : "#FEF3E2";
-  const saveTpl = tpl => {
-    setTpls(p => {
-      const ns = {
-        ...p
-      };
-      ns[tpl.stage] = ns[tpl.stage].map(t => t.id === tpl.id ? tpl : t);
-      return ns;
-    });
-    setEditTpl(null);
-  };
-  const deleteTpl = (st, id) => setTpls(p => ({
-    ...p,
-    [st]: p[st].filter(t => t.id !== id)
-  }));
-  const cloneTpl = (st, tpl) => {
-    const clone = {
-      ...tpl,
-      id: "tpl-" + Date.now(),
-      name: tpl.name + " (نسخة)",
-      appliedTo: [],
-      exams: tpl.exams.map(e => ({
-        ...e,
-        id: "e" + Math.random()
-      }))
-    };
-    setTpls(p => ({
-      ...p,
-      [st]: [...p[st], clone]
-    }));
-  };
-  const createTpl = () => {
-    if (!newTplName) return;
-    const t = {
-      id: "tpl-" + Date.now(),
-      name: newTplName,
-      appliedTo: [],
-      exams: []
-    };
-    setTpls(p => ({
-      ...p,
-      [newTplStage]: [...p[newTplStage], t]
-    }));
-    setShowNewTpl(false);
-    setNewTplName("");
-    setEditTpl({
-      ...t,
-      stage: newTplStage
-    });
-  };
-  const addExamToTpl = tpl => {
-    if (!newExamRow.subject || !newExamRow.date) return;
-    const ex = {
-      ...newExamRow,
-      id: "e" + Date.now()
-    };
-    const updated = {
-      ...tpl,
-      exams: [...tpl.exams, ex]
-    };
-    setEditTpl(updated);
-    setNewExamRow({
-      subject: "",
-      date: "",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    });
-  };
-  const removeExamFromTpl = (tpl, eid) => setEditTpl({
-    ...tpl,
-    exams: tpl.exams.filter(e => e.id !== eid)
-  });
-  const toggleGradeInTpl = (tpl, g) => {
-    const has = tpl.appliedTo.includes(g);
-    setEditTpl({
-      ...tpl,
-      appliedTo: has ? tpl.appliedTo.filter(x => x !== g) : [...tpl.appliedTo, g]
-    });
-  };
-  const allStageStats = STAGES.map(st => ({
-    st,
-    done: (subjects[st] || []).filter(s => s.curriculumDone === 100).length,
-    total: (subjects[st] || []).length,
-    approved: (subjects[st] || []).filter(s => ["معتمدة", "مطبوعة"].includes(s.questionStatus)).length
-  }));
-  const StageGradeBar = () => /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10,
-      flexWrap: "wrap",
-      alignItems: "center",
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 0,
-      borderRadius: 8,
-      overflow: "hidden",
-      border: "0.5px solid #e5e7eb"
-    }
-  }, STAGES.map(s => /*#__PURE__*/React.createElement("button", {
-    key: s,
-    onClick: () => {
-      setStage(s);
-      setSelGrade(GRADES[s][0]);
-    },
-    style: {
-      padding: "6px 14px",
-      border: "none",
-      background: stage === s ? stC[s] : "#fff",
-      color: stage === s ? "#fff" : "#6b7280",
-      fontSize: 12,
-      cursor: "pointer",
-      fontFamily: "Tajawal,sans-serif",
-      fontWeight: stage === s ? 600 : 400
-    }
-  }, s))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6,
-      flexWrap: "wrap"
-    }
-  }, GRADES[stage].map(g => {
-    const hasTpl = !!(tpls[stage] || []).find(t => t.appliedTo.includes(g));
-    return /*#__PURE__*/React.createElement("button", {
-      key: g,
-      onClick: () => setSelGrade(g),
-      style: {
-        ...btn(selGrade === g ? stC[stage] : "#fff", selGrade === g ? "#fff" : "#374151", selGrade === g ? stC[stage] : hasTpl ? "#1D9E75" : "#d1d5db"),
-        fontSize: 11,
-        padding: "4px 10px",
-        position: "relative"
-      }
-    }, g, hasTpl && /*#__PURE__*/React.createElement("span", {
-      style: {
-        position: "absolute",
-        top: -3,
-        left: -3,
-        width: 8,
-        height: 8,
-        borderRadius: "50%",
-        background: "#1D9E75",
-        border: "1px solid #fff"
-      }
-    }));
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#9ca3af"
-    }
-  }, "\u25CF = \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644"));
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: "Tajawal,sans-serif",
-      direction: "rtl",
-      minHeight: "100vh",
-      background: "#f3f4f6"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#1a2940",
-      padding: "12px 20px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between"
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 16,
-      fontWeight: 700,
-      color: "#fff"
-    }
-  }, "\u0646\u0638\u0627\u0645 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629 \u0627\u0644\u0645\u062A\u0643\u0627\u0645\u0644"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#94a3b8",
-      marginTop: 1
-    }
-  }, "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u062B\u0627\u0644\u062B 1446\u0647\u0640")), /*#__PURE__*/React.createElement("button", {
-    style: btn("#1D9E75", "#fff", "#1D9E75")
-  }, "\uD83D\uDDA8\uFE0F \u0637\u0628\u0627\u0639\u0629")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#fff",
-      borderBottom: "0.5px solid #e5e7eb",
-      display: "flex",
-      overflowX: "auto"
-    }
-  }, TABS.map(t => /*#__PURE__*/React.createElement("div", {
-    key: t.id,
-    onClick: () => setTab(t.id),
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 5,
-      padding: "10px 14px",
-      fontSize: 11,
-      cursor: "pointer",
-      borderBottom: tab === t.id ? "3px solid #378ADD" : "3px solid transparent",
-      color: tab === t.id ? "#378ADD" : "#6b7280",
-      fontWeight: tab === t.id ? 700 : 400,
-      whiteSpace: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, t.icon), t.label))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "16px 20px"
-    }
-  }, tab === "dashboard" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      fontWeight: 700
-    }
-  }, "\u0644\u0648\u062D\u0629 \u0627\u0644\u0645\u062A\u0627\u0628\u0639\u0629 \u0627\u0644\u0639\u0627\u0645\u0629"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "repeat(3,1fr)",
-      gap: 12
-    }
-  }, allStageStats.map(({
-    st,
-    done,
-    total,
-    approved
-  }) => /*#__PURE__*/React.createElement("div", {
-    key: st,
-    style: {
-      ...cd,
-      borderTop: `3px solid ${stC[st]}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      color: stC[st],
-      marginBottom: 10
-    }
-  }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px",
-      background: stB[st],
-      borderRadius: 8
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280"
-    }
-  }, "\u0627\u0643\u062A\u0645\u0627\u0644 \u0627\u0644\u0645\u0646\u0647\u062C"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      color: stC[st]
-    }
-  }, done, "/", total)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px",
-      background: "#FAEEDA",
-      borderRadius: 8
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280"
-    }
-  }, "\u0623\u0633\u0626\u0644\u0629 \u0645\u0639\u062A\u0645\u062F\u0629"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      color: "#b45309"
-    }
-  }, approved, "/", total)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px",
-      background: "#EEEDFE",
-      borderRadius: 8,
-      gridColumn: "1/-1"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280"
-    }
-  }, "\u062C\u062F\u0627\u0648\u0644 \u0645\u064F\u0628\u0646\u064A\u0629"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      color: "#534AB7"
-    }
-  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637")))))), /*#__PURE__*/React.createElement("div", {
-    style: cd
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      marginBottom: 6
-    }
-  }, "\uD83D\uDD04 \u062E\u0637 \u0633\u064A\u0631 \u0648\u0631\u0642\u0629 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 \u062C\u0645\u064A\u0639 \u0627\u0644\u0641\u0635\u0648\u0644 \u0648\u0627\u0644\u0645\u0648\u0627\u062F"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 14,
-      fontSize: 11,
-      marginBottom: 10
-    }
-  }, [["#1D9E75", "مكتمل"], ["#F97316", "جارٍ"], ["#fff", "لم يبدأ"]].map(([bg, l]) => /*#__PURE__*/React.createElement("span", {
-    key: l,
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 4
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: 12,
-      height: 12,
-      borderRadius: 3,
-      background: bg,
-      display: "inline-block",
-      border: "0.5px solid #e5e7eb"
-    }
-  }), l))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      overflowX: "auto"
-    }
-  }, STAGES.map(st => {
-    const allGrades = GRADES[st];
-    const allSubs = [...new Set((tpls[st] || []).flatMap(t => t.exams.map(e => e.subject)))];
-    if (!allSubs.length) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      key: st,
-      style: {
-        marginBottom: 16
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        fontWeight: 700,
-        color: stC[st],
-        marginBottom: 5,
-        padding: "3px 8px",
-        background: stB[st],
-        borderRadius: 5,
-        display: "inline-block"
-      }
-    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", {
-      style: {
-        overflowX: "auto"
-      }
-    }, /*#__PURE__*/React.createElement("table", {
-      style: {
-        borderCollapse: "collapse",
-        fontSize: 10
-      }
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-      style: {
-        textAlign: "right",
-        padding: "5px 8px",
-        fontWeight: 600,
-        color: "#6b7280",
-        background: "#f9fafb",
-        border: "0.5px solid #e5e7eb",
-        minWidth: 60
-      }
-    }, "\u0627\u0644\u0641\u0635\u0644"), allSubs.map(sub => /*#__PURE__*/React.createElement("th", {
-      key: sub,
-      style: {
-        padding: "5px 6px",
-        fontWeight: 600,
-        color: "#374151",
-        background: "#f9fafb",
-        border: "0.5px solid #e5e7eb",
-        whiteSpace: "nowrap",
-        minWidth: 76
-      }
-    }, sub)))), /*#__PURE__*/React.createElement("tbody", null, allGrades.map(g => {
-      const gExams = getGradeExams(tpls, st, g);
-      return /*#__PURE__*/React.createElement("tr", {
-        key: g
-      }, /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 8px",
-          fontWeight: 700,
-          color: "#374151",
-          background: "#f9fafb",
-          border: "0.5px solid #e5e7eb",
-          whiteSpace: "nowrap"
-        }
-      }, g), allSubs.map(sub => {
-        const hasExam = gExams.some(e => e.subject === sub);
-        if (!hasExam) return /*#__PURE__*/React.createElement("td", {
-          key: sub,
-          style: {
-            padding: "3px",
-            border: "0.5px solid #e5e7eb"
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            background: "#f9fafb",
-            borderRadius: 4,
-            padding: "5px",
-            textAlign: "center",
-            fontSize: 9,
-            color: "#d1d5db"
-          }
-        }, "\u2014"));
-        const key = `${st}-${g}-${sub}`;
-        const li = getLifeIdx(key);
-        const isC = li === FINAL_IDX,
-          isS = li > 0;
-        const bg = isC ? "#1D9E75" : isS ? "#F97316" : "#fff";
-        const step = PAPER_STEPS[li];
-        return /*#__PURE__*/React.createElement("td", {
-          key: sub,
-          style: {
-            padding: "3px",
-            border: "0.5px solid #e5e7eb"
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          onClick: () => {
-            setTab("lifecycle");
-            setStage(st);
-            setSelGrade(g);
-            setSelExam(key);
-          },
-          title: step?.label,
-          style: {
-            background: bg,
-            borderRadius: 4,
-            padding: "4px 3px",
-            textAlign: "center",
-            cursor: "pointer",
-            border: isS && !isC ? "1px solid #ea8000" : "1px solid transparent"
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            fontSize: 12
-          }
-        }, step?.icon), /*#__PURE__*/React.createElement("div", {
-          style: {
-            fontSize: 8,
-            color: isC || isS ? "#fff" : "#9ca3af",
-            marginTop: 1,
-            lineHeight: 1.2
-          }
-        }, step?.label)));
-      }));
-    })))));
-  })))), tab === "schedules" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      flexWrap: "wrap",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      fontWeight: 700
-    }
-  }, "\uD83C\uDFD7\uFE0F \u0628\u0646\u0627\u0621 \u062C\u062F\u0627\u0648\u0644 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#9ca3af",
-      marginTop: 2
-    }
-  }, "\u0627\u0628\u0646\u0650 \u0627\u0644\u062C\u062F\u0648\u0644 \u0645\u0631\u0629 \u0648\u0627\u062D\u062F\u0629 \u062B\u0645 \u0637\u0628\u0651\u0642\u0647 \u0639\u0644\u0649 \u0627\u0644\u0641\u0635\u0648\u0644 \u0627\u0644\u062A\u064A \u062A\u0646\u0637\u0628\u0642 \u0639\u0644\u064A\u0647\u0627")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowNewTpl(true),
-    style: btn("#1D4ED8", "#fff", "#1D4ED8")
-  }, "+ \u062C\u062F\u0648\u0644 \u062C\u062F\u064A\u062F")), STAGES.map(st => /*#__PURE__*/React.createElement("div", {
-    key: st
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      color: stC[st],
-      marginBottom: 10,
-      display: "flex",
-      alignItems: "center",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: "3px 10px",
-      background: stB[st],
-      borderRadius: 6
-    }
-  }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 11,
-      fontWeight: 400,
-      color: "#9ca3af"
-    }
-  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637")), (tpls[st] || []).length === 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      color: "#9ca3af",
-      fontSize: 12,
-      textAlign: "center",
-      padding: 20
-    }
-  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0627\u0648\u0644 \u2014 \u0627\u0636\u063A\u0637 \"+ \u062C\u062F\u0648\u0644 \u062C\u062F\u064A\u062F\""), (tpls[st] || []).map(tpl => /*#__PURE__*/React.createElement("div", {
-    key: tpl.id,
-    style: {
-      ...cd,
-      marginBottom: 10,
-      borderRight: `3px solid ${stC[st]}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 10,
-      flexWrap: "wrap",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700
-    }
-  }, tpl.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginTop: 3,
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 4
-    }
-  }, tpl.appliedTo.length === 0 ? /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#E24B4A"
-    }
-  }, "\u26A0\uFE0F \u0644\u0645 \u064A\u064F\u0637\u0628\u064E\u0651\u0642 \u0639\u0644\u0649 \u0623\u064A \u0641\u0635\u0644") : tpl.appliedTo.map(g => /*#__PURE__*/React.createElement("span", {
-    key: g,
-    style: bdg(stC[st], stB[st])
-  }, g)))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEditTpl({
-      ...tpl,
-      stage: st
-    }),
-    style: btn("#E6F1FB", "#1D4ED8", "#1D4ED8")
-  }, "\u270F\uFE0F \u062A\u0639\u062F\u064A\u0644"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => cloneTpl(st, tpl),
-    style: btn("#EEEDFE", "#534AB7", "#534AB7")
-  }, "\uD83D\uDCCB \u0646\u0633\u062E"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => deleteTpl(st, tpl.id),
-    style: btn("#FCEBEB", "#E24B4A", "#E24B4A")
-  }, "\uD83D\uDDD1\uFE0F \u062D\u0630\u0641"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      overflowX: "auto"
-    }
-  }, /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: 11
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    style: {
-      background: "#f9fafb"
-    }
-  }, ["المادة", "التاريخ", "اليوم", "الوقت", "المدة"].map(h => /*#__PURE__*/React.createElement("th", {
-    key: h,
-    style: {
-      textAlign: "right",
-      padding: "6px 8px",
-      fontWeight: 600,
-      fontSize: 10,
-      color: "#6b7280",
-      borderBottom: "0.5px solid #e5e7eb"
-    }
-  }, h)))), /*#__PURE__*/React.createElement("tbody", null, tpl.exams.map((ex, i) => /*#__PURE__*/React.createElement("tr", {
-    key: ex.id,
-    style: {
-      borderBottom: "0.5px solid #f3f4f6",
-      background: i % 2 === 0 ? "#fff" : "#fafafa"
-    }
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "6px 8px",
-      fontWeight: 600
-    }
-  }, ex.subject), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "6px 8px",
-      color: "#374151"
-    }
-  }, ex.date), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "6px 8px",
-      color: "#6b7280"
-    }
-  }, ex.day), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "6px 8px",
-      color: "#6b7280"
-    }
-  }, ex.time), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "6px 8px",
-      color: "#6b7280"
-    }
-  }, ex.duration, " \u062F"))))))))))), tab === "curriculum" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0645\u062A\u0627\u0628\u0639\u0629 \u0627\u0643\u062A\u0645\u0627\u0644 \u0627\u0644\u0645\u0646\u0647\u062C \u2014 ", stage), /*#__PURE__*/React.createElement("div", {
-    style: cd
-  }, /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: 12
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    style: {
-      background: "#f9fafb"
-    }
-  }, ["المادة", "المعلم", "المشرف", "نسبة الاكتمال", "الحالة", "حالة الأسئلة", "إجراء"].map(h => /*#__PURE__*/React.createElement("th", {
-    key: h,
-    style: {
-      textAlign: "right",
-      padding: "8px 10px",
-      fontWeight: 600,
-      fontSize: 11,
-      color: "#6b7280",
-      borderBottom: "0.5px solid #e5e7eb"
-    }
-  }, h)))), /*#__PURE__*/React.createElement("tbody", null, curSubjects.map(sub => {
-    const done = sub.curriculumDone === 100,
-      warn = sub.curriculumDone < 80;
-    return /*#__PURE__*/React.createElement("tr", {
-      key: sub.id,
-      style: {
-        borderBottom: "0.5px solid #f3f4f6"
-      }
-    }, /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px",
-        fontWeight: 600
-      }
-    }, sub.name), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px",
-        fontSize: 11
-      }
-    }, sub.teacher), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px",
-        fontSize: 11,
-        color: "#6b7280"
-      }
-    }, sub.supervisor), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px",
-        minWidth: 160
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 6
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        height: 7,
-        background: "#f3f4f6",
-        borderRadius: 4,
-        overflow: "hidden"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: sub.curriculumDone + "%",
-        height: "100%",
-        background: done ? "#1D9E75" : warn ? "#E24B4A" : "#EF9F27",
-        borderRadius: 4
-      }
-    })), /*#__PURE__*/React.createElement("input", {
-      type: "number",
-      min: 0,
-      max: 100,
-      value: sub.curriculumDone,
-      onChange: e => updateSubjectField(stage, sub.id, "curriculumDone", Math.min(100, Math.max(0, +e.target.value))),
-      style: {
-        width: 48,
-        padding: "2px 5px",
-        border: "0.5px solid #d1d5db",
-        borderRadius: 6,
-        fontSize: 12,
-        textAlign: "center",
-        fontFamily: "Tajawal,sans-serif"
-      }
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 11
-      }
-    }, "%"))), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px"
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: bdg(done ? "#1D9E75" : warn ? "#E24B4A" : "#EF9F27", done ? "#E4F5EE" : warn ? "#FCEBEB" : "#FEF3E2")
-    }, done ? "مكتمل ✓" : warn ? "متأخر ⚠️" : "جارٍ")), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px"
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: bdg(QSC[sub.questionStatus], QSB[sub.questionStatus])
-    }, sub.questionStatus)), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px"
-      }
-    }, /*#__PURE__*/React.createElement("button", {
-      onClick: () => setEditSubj({
-        ...sub,
-        _stage: stage
-      }),
-      style: {
-        ...btn(),
-        fontSize: 11,
-        padding: "3px 8px"
-      }
-    }, "\u062A\u0639\u062F\u064A\u0644")));
-  }))))), tab === "questions" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0627\u0644\u0623\u0633\u0626\u0644\u0629 \u0648\u0627\u0644\u0627\u0639\u062A\u0645\u0627\u062F \u2014 ", stage), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 0,
-      overflowX: "auto",
-      marginBottom: 4
-    }
-  }, ["تسليم المعلم ←", "مراجعة المشرف ←", "الاعتماد ←", "طباعة وتصوير"].map((s, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      flex: 1,
-      textAlign: "center",
-      padding: "7px 4px",
-      background: ["#E6F1FB", "#FAEEDA", "#EEEDFE", "#E4F5EE"][i],
-      fontSize: 11,
-      fontWeight: 600,
-      color: ["#1D4ED8", "#b45309", "#534AB7", "#1D9E75"][i],
-      borderRadius: i === 0 ? "8px 0 0 8px" : i === 3 ? "0 8px 8px 0" : "0",
-      minWidth: 100
-    }
-  }, s))), /*#__PURE__*/React.createElement("div", {
-    style: cd
-  }, /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: 12
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    style: {
-      background: "#f9fafb"
-    }
-  }, ["المادة", "المعلم", "التسليم", "المشرف", "حالة المراجعة", "الطباعة", "إجراء"].map(h => /*#__PURE__*/React.createElement("th", {
-    key: h,
-    style: {
-      textAlign: "right",
-      padding: "8px 9px",
-      fontWeight: 600,
-      fontSize: 11,
-      color: "#6b7280",
-      borderBottom: "0.5px solid #e5e7eb"
-    }
-  }, h)))), /*#__PURE__*/React.createElement("tbody", null, curSubjects.map(sub => /*#__PURE__*/React.createElement("tr", {
-    key: sub.id,
-    style: {
-      borderBottom: "0.5px solid #f3f4f6"
-    }
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px",
-      fontWeight: 600
-    }
-  }, sub.name), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px",
-      fontSize: 11
-    }
-  }, sub.teacher), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px"
-    }
-  }, sub.submitted ? /*#__PURE__*/React.createElement("span", {
-    style: bdg("#1D9E75", "#E4F5EE")
-  }, "\u2713 \u0633\u064F\u0644\u0650\u0651\u0645\u062A") : /*#__PURE__*/React.createElement("button", {
-    onClick: () => updateSubjectField(stage, sub.id, "submitted", true),
-    style: {
-      ...btn("#1D9E75", "#fff", "#1D9E75"),
-      fontSize: 10,
-      padding: "3px 8px"
-    }
-  }, "\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062A\u0633\u0644\u064A\u0645")), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px",
-      fontSize: 11,
-      color: "#6b7280"
-    }
-  }, sub.supervisor), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px"
-    }
-  }, /*#__PURE__*/React.createElement("select", {
-    value: sub.questionStatus,
-    onChange: e => updateSubjectField(stage, sub.id, "questionStatus", e.target.value),
-    style: {
-      padding: "3px 7px",
-      border: "0.5px solid #d1d5db",
-      borderRadius: 6,
-      fontSize: 11,
-      background: QSB[sub.questionStatus],
-      color: QSC[sub.questionStatus],
-      fontFamily: "Tajawal,sans-serif"
-    }
-  }, Q_STATUSES.map(s => /*#__PURE__*/React.createElement("option", {
-    key: s
-  }, s)))), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px"
-    }
-  }, sub.questionStatus === "مطبوعة" ? /*#__PURE__*/React.createElement("span", {
-    style: bdg("#534AB7", "#EEEDFE")
-  }, "\u2713 \u0645\u0637\u0628\u0648\u0639\u0629") : sub.questionStatus === "معتمدة" ? /*#__PURE__*/React.createElement("button", {
-    onClick: () => updateSubjectField(stage, sub.id, "questionStatus", "مطبوعة"),
-    style: {
-      ...btn("#534AB7", "#fff", "#534AB7"),
-      fontSize: 10,
-      padding: "3px 8px"
-    }
-  }, "\u0637\u0628\u0627\u0639\u0629") : /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#9ca3af"
-    }
-  }, "\u2014")), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "9px 9px"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEditSubj({
-      ...sub,
-      _stage: stage
-    }),
-    style: {
-      ...btn(),
-      fontSize: 11,
-      padding: "3px 8px"
-    }
-  }, "\u062A\u0639\u062F\u064A\u0644")))))))), tab === "committees" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0644\u062C\u0627\u0646 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setCommittees(p => {
-      const ns = {
-        ...p
-      };
-      ns[stage] = {
-        ...ns[stage]
-      };
-      ns[stage][selGrade] = [...ns[stage][selGrade], {
-        room: "",
-        inv1: "",
-        inv2: "",
-        inv1Present: null,
-        inv2Present: null,
-        inv1Note: "",
-        inv2Note: "",
-        inv1Time: "",
-        inv2Time: ""
-      }];
-      return ns;
-    }),
-    style: btn("#1D4ED8", "#fff", "#1D4ED8")
-  }, "+ \u0625\u0636\u0627\u0641\u0629 \u0642\u0627\u0639\u0629")), !curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      color: "#9ca3af",
-      textAlign: "center",
-      padding: 20
-    }
-  }, "\u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644 \u0644\u0627 \u064A\u0631\u062A\u0628\u0637 \u0628\u062C\u062F\u0648\u0644 \u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0628\u0639\u062F"), curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px 12px",
-      background: stB[stage],
-      borderRadius: 8,
-      fontSize: 11,
-      color: stC[stage]
-    }
-  }, /*#__PURE__*/React.createElement("strong", null, "\u0627\u0644\u062C\u062F\u0648\u0644 \u0627\u0644\u0645\u064F\u0637\u0628\u064E\u0651\u0642:"), " ", curTpl.name, " \u2014 ", curExams.length, " \u0645\u0627\u062F\u0629"), curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      ...cd,
-      borderRight: `3px solid ${stC[stage]}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 600
-    }
-  }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, " \u2014 \u0627\u0644\u0644\u062C\u0646\u0629 ", i + 1), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setCommittees(p => {
-        const ns = {
-          ...p
-        };
-        ns[stage][selGrade] = ns[stage][selGrade].filter((_, j) => j !== i);
-        return ns;
-      });
-    },
-    style: {
-      ...btn("#FCEBEB", "#E24B4A", "#E24B4A"),
-      fontSize: 10,
-      padding: "3px 8px"
-    }
-  }, "\u062D\u0630\u0641")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
-      gap: 10,
-      fontSize: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0631\u0642\u0645 \u0627\u0644\u0642\u0627\u0639\u0629"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: room.room,
-    onChange: e => updateInv(i, "room", e.target.value),
-    placeholder: "101"
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0631\u0627\u0642\u0628 \u0627\u0644\u0623\u0648\u0644"), /*#__PURE__*/React.createElement("select", {
-    style: inp,
-    value: room.inv1,
-    onChange: e => updateInv(i, "inv1", e.target.value)
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "\u2014 \u0627\u062E\u062A\u0631 \u2014"), INV_POOL.map(v => /*#__PURE__*/React.createElement("option", {
-    key: v
-  }, v)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0631\u0627\u0642\u0628 \u0627\u0644\u062B\u0627\u0646\u064A"), /*#__PURE__*/React.createElement("select", {
-    style: inp,
-    value: room.inv2,
-    onChange: e => updateInv(i, "inv2", e.target.value)
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "\u2014 \u0627\u062E\u062A\u0631 \u2014"), INV_POOL.map(v => /*#__PURE__*/React.createElement("option", {
-    key: v
-  }, v))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10,
-      padding: "10px",
-      background: "#f9fafb",
-      borderRadius: 8
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      fontWeight: 600,
-      color: "#374151",
-      marginBottom: 6
-    }
-  }, "\u0637\u0644\u0627\u0628 \u0627\u0644\u0642\u0627\u0639\u0629 (", selGrade, ")"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 6
-    }
-  }, curStudents.map(st => /*#__PURE__*/React.createElement("span", {
-    key: st.id,
-    style: {
-      fontSize: 11,
-      padding: "3px 10px",
-      background: "#fff",
-      border: "0.5px solid #e5e7eb",
-      borderRadius: 20
-    }
-  }, st.name))))))), tab === "invigilators" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0645\u0631\u0627\u0642\u0628\u0629 \u062A\u0648\u0627\u062C\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646 \u2014 ", selGrade), curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      ...cd,
-      borderRight: `3px solid ${stC[stage]}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      marginBottom: 12
-    }
-  }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, " \u2014 \u0627\u0644\u0644\u062C\u0646\u0629 ", i + 1), [["inv1", "المراقب الأول"], ["inv2", "المراقب الثاني"]].map(([prefix, label]) => /*#__PURE__*/React.createElement("div", {
-    key: prefix,
-    style: {
-      marginBottom: 12,
-      padding: "12px",
-      background: "#f9fafb",
-      borderRadius: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      fontWeight: 600
-    }
-  }, label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginTop: 2
-    }
-  }, room[prefix] || "غير محدد")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => updateInv(i, `${prefix}Present`, true),
-    style: {
-      ...btn(room[`${prefix}Present`] === true ? "#1D9E75" : "#fff", room[`${prefix}Present`] === true ? "#fff" : "#374151", room[`${prefix}Present`] === true ? "#1D9E75" : "#d1d5db"),
-      fontSize: 11,
-      padding: "5px 14px"
-    }
-  }, "\u2713 \u062D\u0627\u0636\u0631"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => updateInv(i, `${prefix}Present`, false),
-    style: {
-      ...btn(room[`${prefix}Present`] === false ? "#E24B4A" : "#fff", room[`${prefix}Present`] === false ? "#fff" : "#374151", room[`${prefix}Present`] === false ? "#E24B4A" : "#d1d5db"),
-      fontSize: 11,
-      padding: "5px 14px"
-    }
-  }, "\u2717 \u063A\u0627\u0626\u0628"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0648\u0642\u062A \u0627\u0644\u062D\u0636\u0648\u0631"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: room[`${prefix}Time`],
-    onChange: e => updateInv(i, `${prefix}Time`, e.target.value),
-    placeholder: "7:55 \u0635"
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0645\u0644\u0627\u062D\u0638\u0629"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: room[`${prefix}Note`],
-    onChange: e => updateInv(i, `${prefix}Note`, e.target.value),
-    placeholder: "\u0623\u064A \u0645\u0644\u0627\u062D\u0638\u0629..."
-  }))), room[`${prefix}Present`] === false && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 8,
-      padding: "7px 10px",
-      background: "#FCEBEB",
-      borderRadius: 8,
-      fontSize: 11,
-      color: "#E24B4A"
-    }
-  }, "\u26A0\uFE0F \u063A\u0627\u0626\u0628 \u2014 \u064A\u0633\u062A\u0648\u062C\u0628 \u062A\u0639\u064A\u064A\u0646 \u0628\u062F\u064A\u0644 \u0641\u0648\u0631\u0627\u064B"), room[`${prefix}Present`] === true && room[`${prefix}Time`] && room[`${prefix}Time`] > "8:00" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 8,
-      padding: "7px 10px",
-      background: "#FEF3E2",
-      borderRadius: 8,
-      fontSize: 11,
-      color: "#b45309"
-    }
-  }, "\u23F0 \u062D\u0636\u0631 \u0645\u062A\u0623\u062E\u0631\u0627\u064B (", room[`${prefix}Time`], ")")))))), tab === "attendance" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u062D\u0636\u0648\u0631 \u0648\u0623\u0648\u0631\u0627\u0642 \u0627\u0644\u0637\u0644\u0627\u0628 \u2014 ", selGrade), !curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      color: "#9ca3af",
-      textAlign: "center",
-      padding: 20
-    }
-  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644 \u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0645\u0631\u062A\u0628\u0637 \u0628\u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644"), curTpl && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      flexWrap: "wrap"
-    }
-  }, curExams.map(ex => {
-    const key = `${stage}-${selGrade}-${ex.subject}`;
-    return /*#__PURE__*/React.createElement("button", {
-      key: ex.id,
-      onClick: () => setAttExamKey(key),
-      style: {
-        ...btn(attExamKey === key ? "#1D4ED8" : "#fff", attExamKey === key ? "#fff" : "#374151", attExamKey === key ? "#1D4ED8" : "#d1d5db"),
-        fontSize: 11
-      }
-    }, ex.subject, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 9,
-        opacity: .7
-      }
-    }, ex.date));
-  })), attExamKey && (() => {
-    const sub = curExams.find(e => `${stage}-${selGrade}-${e.subject}` === attExamKey)?.subject;
-    if (!sub) return null;
-    const present = curStudents.filter(s => (s.attendance[sub] || "حاضر") === "حاضر").length;
-    const recvd = curStudents.filter(s => s.paperReceived[sub] === "استلم").length;
-    const submd = curStudents.filter(s => s.paperSubmitted[sub]).length;
-    const solved = curStudents.filter(s => s.paperSolved[sub]).length;
-    return /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 12
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "grid",
-        gridTemplateColumns: "repeat(4,1fr)",
-        gap: 10
-      }
-    }, [["حاضر", present, "#1D9E75", "#E4F5EE"], ["استلم", recvd, "#378ADD", "#E6F1FB"], ["سلّم", submd, "#534AB7", "#EEEDFE"], ["مكتوبة", solved, "#1a7a5e", "#E4F5EE"]].map(([l, v, c, bg]) => /*#__PURE__*/React.createElement("div", {
-      key: l,
-      style: {
-        padding: "10px",
-        background: bg,
-        borderRadius: 10,
-        textAlign: "center"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 18,
-        fontWeight: 700,
-        color: c
-      }
-    }, v), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 10,
-        color: "#6b7280"
-      }
-    }, l)))), /*#__PURE__*/React.createElement("div", {
-      style: cd
-    }, /*#__PURE__*/React.createElement("table", {
-      style: {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: 12
-      }
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-      style: {
-        background: "#f9fafb"
-      }
-    }, ["#", "الطالب", "الحضور", "استلم الورقة", "سلّم الورقة", "الورقة مكتوبة", "ملاحظات"].map(h => /*#__PURE__*/React.createElement("th", {
-      key: h,
-      style: {
-        textAlign: "right",
-        padding: "7px 9px",
-        fontWeight: 600,
-        fontSize: 10,
-        color: "#6b7280",
-        borderBottom: "0.5px solid #e5e7eb"
-      }
-    }, h)))), /*#__PURE__*/React.createElement("tbody", null, curStudents.map((st, idx) => {
-      const att = st.attendance[sub] || "حاضر",
-        recv = st.paperReceived[sub] || "لم يستلم",
-        subm = st.paperSubmitted[sub] || false,
-        slvd = st.paperSolved[sub] || false;
-      return /*#__PURE__*/React.createElement("tr", {
-        key: st.id,
-        style: {
-          borderBottom: "0.5px solid #f3f4f6",
-          background: att === "غائب" ? "#fff9f9" : idx % 2 === 0 ? "#fff" : "#fafafa"
-        }
-      }, /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "8px 9px",
-          color: "#9ca3af"
-        }
-      }, idx + 1), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "8px 9px",
-          fontWeight: 500
-        }
-      }, st.name), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => toggleField(st.id, sub, "attendance"),
-        style: {
-          ...bdg(attCol(att), attBg(att)),
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "Tajawal,sans-serif",
-          padding: "4px 10px"
-        }
-      }, att)), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => toggleField(st.id, sub, "paperReceived"),
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "Tajawal,sans-serif",
-          fontSize: 11,
-          fontWeight: 500,
-          background: recv === "استلم" ? "#E4F5EE" : "#f3f4f6",
-          color: recv === "استلم" ? "#1D9E75" : "#6b7280"
-        }
-      }, recv === "استلم" ? "✓ استلم" : "لم يستلم")), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => toggleField(st.id, sub, "paperSubmitted"),
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "Tajawal,sans-serif",
-          fontSize: 11,
-          fontWeight: 500,
-          background: subm ? "#E4F5EE" : "#FCEBEB",
-          color: subm ? "#1D9E75" : "#E24B4A"
-        }
-      }, subm ? "✓ سلّم" : "لم يسلّم")), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => toggleField(st.id, sub, "paperSolved"),
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "Tajawal,sans-serif",
-          fontSize: 11,
-          fontWeight: 500,
-          background: slvd ? "#E4F5EE" : "#FEF3E2",
-          color: slvd ? "#1D9E75" : "#EF9F27"
-        }
-      }, slvd ? "✓ مكتوبة" : "غير مكتوبة ⚠️")), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px",
-          fontSize: 10,
-          color: "#9ca3af"
-        }
-      }, att === "غائب" && /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: "#E24B4A"
-        }
-      }, "\u063A\u0627\u0626\u0628"), !slvd && att !== "غائب" && subm && /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: "#EF9F27"
-        }
-      }, "\u0641\u0627\u0631\u063A\u0629!")));
-    })))));
-  })())), tab === "daily_report" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0627\u0644\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u064A\u0648\u0645\u064A \u0644\u0645\u0634\u0631\u0641 \u0627\u0644\u0644\u062C\u0627\u0646 \u2014 ", selGrade), /*#__PURE__*/React.createElement("div", {
-    style: cd
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
-      gap: 12,
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u062A\u0627\u0631\u064A\u062E"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: dailyReport.date,
-    onChange: e => setDailyReport(p => ({
-      ...p,
-      date: e.target.value
-    }))
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0645\u0634\u0631\u0641 \u0627\u0644\u0644\u062C\u0627\u0646"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: dailyReport.supervisor,
-    onChange: e => setDailyReport(p => ({
-      ...p,
-      supervisor: e.target.value
-    }))
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u0627\u0644\u0639\u0627\u0645"), /*#__PURE__*/React.createElement("select", {
-    style: {
-      ...inp,
-      background: RATING_COLOR[dailyReport.generalRating] + "22",
-      color: RATING_COLOR[dailyReport.generalRating],
-      fontWeight: 600
-    },
-    value: dailyReport.generalRating,
-    onChange: e => setDailyReport(p => ({
-      ...p,
-      generalRating: e.target.value
-    }))
-  }, RATING_OPTIONS.map(r => /*#__PURE__*/React.createElement("option", {
-    key: r
-  }, r))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 14
-    }
-  }, RATING_OPTIONS.map(r => /*#__PURE__*/React.createElement("button", {
-    key: r,
-    onClick: () => setDailyReport(p => ({
-      ...p,
-      generalRating: r
-    })),
-    style: {
-      flex: 1,
-      padding: "8px 4px",
-      borderRadius: 8,
-      border: `2px solid ${dailyReport.generalRating === r ? RATING_COLOR[r] : "#e5e7eb"}`,
-      background: dailyReport.generalRating === r ? RATING_COLOR[r] + "22" : "#fff",
-      color: RATING_COLOR[r],
-      fontSize: 11,
-      fontWeight: 600,
-      cursor: "pointer",
-      fontFamily: "Tajawal,sans-serif"
-    }
-  }, r))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0644\u0627\u062D\u0638\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629"), /*#__PURE__*/React.createElement("textarea", {
-    value: dailyReport.notes,
-    onChange: e => setDailyReport(p => ({
-      ...p,
-      notes: e.target.value
-    })),
-    placeholder: "\u0645\u0644\u0627\u062D\u0638\u0627\u062A\u0643 \u0627\u0644\u0639\u0627\u0645\u0629 \u0639\u0646 \u064A\u0648\u0645 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631...",
-    style: {
-      ...inp,
-      minHeight: 80,
-      resize: "vertical"
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setReportSaved(true),
-    style: btn("#1a2940", "#fff", "#1a2940")
-  }, "\uD83D\uDCBE \u062D\u0641\u0638 \u0627\u0644\u062A\u0642\u0631\u064A\u0631"), /*#__PURE__*/React.createElement("button", {
-    style: btn("#1D9E75", "#fff", "#1D9E75")
-  }, "\uD83D\uDDA8\uFE0F \u0637\u0628\u0627\u0639\u0629")), reportSaved && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10,
-      padding: "8px 12px",
-      background: "#E4F5EE",
-      borderRadius: 8,
-      fontSize: 12,
-      color: "#1D9E75"
-    }
-  }, "\u2705 \u062A\u0645 \u062D\u0641\u0638 \u0627\u0644\u062A\u0642\u0631\u064A\u0631"))), tab === "lifecycle" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u062E\u0637 \u0633\u064A\u0631 \u0648\u0631\u0642\u0629 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), !curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      color: "#9ca3af",
-      textAlign: "center",
-      padding: 20
-    }
-  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644 \u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0645\u0631\u062A\u0628\u0637 \u0628\u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644"), curTpl && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      flexWrap: "wrap"
-    }
-  }, curExams.map(ex => {
-    const key = `${stage}-${selGrade}-${ex.subject}`;
-    const idx = getLifeIdx(key);
-    const isC = idx === FINAL_IDX,
-      isS = idx > 0;
-    return /*#__PURE__*/React.createElement("button", {
-      key: ex.id,
-      onClick: () => setSelExam(key),
-      style: {
-        ...btn(selExam === key ? "#1a2940" : "#fff", selExam === key ? "#fff" : "#374151", selExam === key ? "#1a2940" : "#d1d5db"),
-        fontSize: 11,
-        position: "relative",
-        paddingBottom: 12
-      }
-    }, ex.subject, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 9,
-        opacity: .6
-      }
-    }, ex.date), /*#__PURE__*/React.createElement("div", {
-      style: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        borderRadius: "0 0 8px 8px",
-        background: isC ? "#1D9E75" : isS ? "#F97316" : "#e5e7eb"
-      }
-    }));
-  })), selExam && (() => {
-    const curIdx = getLifeIdx(selExam);
-    const step = PAPER_STEPS[curIdx];
-    const ex = curExams.find(e => `${stage}-${selGrade}-${e.subject}` === selExam);
-    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        ...cd,
-        overflowX: "auto",
-        marginBottom: 14
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "flex-start",
-        minWidth: 900
-      }
-    }, PAPER_STEPS.map((s, i) => {
-      const done = i < curIdx,
-        active = i === curIdx;
-      return /*#__PURE__*/React.createElement("div", {
-        key: s.id,
-        style: {
-          display: "flex",
-          alignItems: "center",
-          flex: 1
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          textAlign: "center",
-          flex: 1
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          width: 34,
-          height: 34,
-          borderRadius: "50%",
-          margin: "0 auto 4px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 14,
-          background: done ? "#1D9E75" : active ? stC[stage] : "#f3f4f6",
-          color: done || active ? "#fff" : "#9ca3af",
-          border: active ? `2px solid ${stC[stage]}` : "none"
-        }
-      }, done ? "✓" : s.icon), /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: 8,
-          color: done ? "#1D9E75" : active ? stC[stage] : "#9ca3af",
-          fontWeight: active || done ? 600 : 400,
-          lineHeight: 1.3,
-          maxWidth: 66,
-          margin: "0 auto"
-        }
-      }, s.label)), i < FINAL_IDX && /*#__PURE__*/React.createElement("div", {
-        style: {
-          width: 16,
-          height: 2,
-          background: done ? "#1D9E75" : "#e5e7eb",
-          flexShrink: 0
-        }
-      }));
-    }))), /*#__PURE__*/React.createElement("div", {
-      style: {
-        ...cd,
-        borderRight: `4px solid ${stC[stage]}`
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 28
-      }
-    }, step?.icon), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 14,
-        fontWeight: 700
-      }
-    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629: ", step?.label), ex && /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#6b7280",
-        marginTop: 2
-      }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
-      onClick: () => advanceLife(selExam),
-      style: btn(stC[stage], "#fff", stC[stage])
-    }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
-      style: bdg("#1D9E75", "#E4F5EE")
-    }, "\u2705 \u0627\u0643\u062A\u0645\u0644"))));
-  })())), tab === "ranking" && (() => {
-    const rows = [];
-    STAGES.forEach(st => {
-      GRADES[st].forEach(g => {
-        getGradeExams(tpls, st, g).forEach(ex => {
-          const key = `${st}-${g}-${ex.subject}`;
-          const li = getLifeIdx(key);
-          const reached = li >= TARGET_IDX,
-            isC = li === FINAL_IDX,
-            rT = stepTimes[key]?.["recorded"] || null;
-          rows.push({
-            key,
-            st,
-            g,
-            subject: ex.subject,
-            li,
-            reached,
-            isC,
-            rT,
-            stColor: stC[st],
-            stBg: stB[st]
-          });
-        });
-      });
-    });
-    const gradeMap = {};
-    rows.forEach(r => {
-      const gk = `${r.st}|${r.g}`;
-      if (!gradeMap[gk]) gradeMap[gk] = {
-        st: r.st,
-        g: r.g,
-        total: 0,
-        done: 0,
-        sumIdx: 0,
-        stColor: r.stColor,
-        stBg: r.stBg
-      };
-      gradeMap[gk].total++;
-      gradeMap[gk].sumIdx += r.li;
-      if (r.reached) gradeMap[gk].done++;
-    });
-    const gradeRanking = Object.values(gradeMap).sort((a, b) => {
-      const pa = a.done / a.total,
-        pb = b.done / b.total;
-      if (pb !== pa) return pb - pa;
-      return b.sumIdx / b.total - a.sumIdx / a.total;
-    });
-    const allSubs = [...new Set(rows.map(r => r.subject))];
-    return /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 14
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 15,
-        fontWeight: 700
-      }
-    }, "\uD83C\uDFC6 \u0627\u0644\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u062A\u0646\u0627\u0641\u0633\u064A \u2014 \u0633\u0628\u0627\u0642 \u0627\u0644\u0631\u0635\u062F \u0641\u064A \u0646\u0648\u0631"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#9ca3af",
-        marginTop: 2
-      }
-    }, "\u062A\u0631\u062A\u064A\u0628 \u0627\u0644\u0634\u0639\u0628 \u062D\u0633\u0628 \u0633\u0631\u0639\u0629 \u0625\u062A\u0645\u0627\u0645 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u0648\u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u0631\u0635\u062F"))), /*#__PURE__*/React.createElement("div", {
-      style: cd
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 13,
-        fontWeight: 700,
-        marginBottom: 12
-      }
-    }, "\u062A\u0631\u062A\u064A\u0628 \u0627\u0644\u0634\u0639\u0628 \u2014 \u0646\u0633\u0628\u0629 \u0627\u0644\u0625\u0646\u062C\u0627\u0632 \u0627\u0644\u0643\u0644\u064A\u0629"), /*#__PURE__*/React.createElement("table", {
-      style: {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: 12
-      }
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-      style: {
-        background: "#f9fafb"
-      }
-    }, ["الترتيب", "الشعبة", "المرحلة", "أتمّت الرصد", "نسبة الإنجاز", "الحالة"].map(h => /*#__PURE__*/React.createElement("th", {
-      key: h,
-      style: {
-        textAlign: "right",
-        padding: "8px 10px",
-        fontWeight: 600,
-        fontSize: 11,
-        color: "#6b7280",
-        borderBottom: "0.5px solid #e5e7eb"
-      }
-    }, h)))), /*#__PURE__*/React.createElement("tbody", null, gradeRanking.map((r, i) => {
-      const pct = (r.done / r.total * 100).toFixed(0);
-      return /*#__PURE__*/React.createElement("tr", {
-        key: `${r.st}-${r.g}`,
-        style: {
-          borderBottom: "0.5px solid #f3f4f6",
-          background: i === 0 ? "#fffbeb" : i === 1 ? "#f9fafb" : i === 2 ? "#fff8f0" : "#fff"
-        }
-      }, /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px",
-          fontWeight: 700,
-          fontSize: 15
-        }
-      }, MEDALS[i] || /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: "#9ca3af",
-          fontSize: 12
-        }
-      }, i + 1)), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px",
-          fontWeight: 700,
-          fontSize: 13
-        }
-      }, r.g), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px"
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: bdg(r.stColor, r.stBg)
-      }, r.st)), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px",
-          fontWeight: 600,
-          color: r.done === r.total ? "#1D9E75" : "#374151"
-        }
-      }, r.done, "/", r.total), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px",
-          minWidth: 140
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 8
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          flex: 1,
-          height: 8,
-          background: "#f3f4f6",
-          borderRadius: 4,
-          overflow: "hidden"
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          width: pct + "%",
-          height: "100%",
-          background: +pct === 100 ? "#1D9E75" : +pct >= 60 ? "#EF9F27" : "#E24B4A",
-          borderRadius: 4
-        }
-      })), /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontWeight: 700,
-          color: +pct === 100 ? "#1D9E75" : +pct >= 60 ? "#EF9F27" : "#E24B4A",
-          minWidth: 36
-        }
-      }, pct, "%"))), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "10px"
-        }
-      }, r.done === r.total ? /*#__PURE__*/React.createElement("span", {
-        style: bdg("#1D9E75", "#E4F5EE")
-      }, "\u2705 \u0645\u0643\u062A\u0645\u0644") : r.done > 0 ? /*#__PURE__*/React.createElement("span", {
-        style: bdg("#EF9F27", "#FEF3E2")
-      }, "\u23F3 \u062C\u0627\u0631\u064D") : /*#__PURE__*/React.createElement("span", {
-        style: bdg("#9ca3af", "#f3f4f6")
-      }, "\u2B1C \u0644\u0645 \u064A\u0628\u062F\u0623")));
-    })))), /*#__PURE__*/React.createElement("div", {
-      style: cd
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 13,
-        fontWeight: 700,
-        marginBottom: 4
-      }
-    }, "\uD83C\uDFAF \u0627\u0644\u062A\u0646\u0627\u0641\u0633 \u0644\u0643\u0644 \u0645\u0627\u062F\u0629 \u2014 \u0639\u0628\u0631 \u062C\u0645\u064A\u0639 \u0627\u0644\u0634\u0639\u0628"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#9ca3af",
-        marginBottom: 12
-      }
-    }, "\u0644\u0643\u0644 \u0645\u0627\u062F\u0629: \u0645\u0646 \u0623\u0633\u0631\u0639 \u0634\u0639\u0628\u0629 \u0623\u062A\u0645\u0651\u062A \u0627\u0644\u0631\u0635\u062F \u0641\u064A \u0646\u0638\u0627\u0645 \u0646\u0648\u0631\u061F"), allSubs.map(sub => {
-      const entries = rows.filter(r => r.subject === sub).sort((a, b) => {
-        if (a.reached && !b.reached) return -1;
-        if (!a.reached && b.reached) return 1;
-        if (a.reached && b.reached) {
-          if (a.rT && b.rT) return a.rT.localeCompare(b.rT);
-          if (a.rT) return -1;
-          if (b.rT) return 1;
-        }
-        return b.li - a.li;
-      });
-      if (!entries.length) return null;
-      const doneC = entries.filter(e => e.reached).length,
-        totC = entries.length,
-        pctD = (doneC / totC * 100).toFixed(0);
-      return /*#__PURE__*/React.createElement("div", {
-        key: sub,
-        style: {
-          marginBottom: 14,
-          border: "0.5px solid #e5e7eb",
-          borderRadius: 10,
-          overflow: "hidden"
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "10px 14px",
-          background: "#f9fafb",
-          borderBottom: "0.5px solid #e5e7eb"
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          fontSize: 13,
-          fontWeight: 700,
-          color: "#1a2940"
-        }
-      }, sub), /*#__PURE__*/React.createElement("div", {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 10
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          width: 100,
-          height: 5,
-          background: "#e5e7eb",
-          borderRadius: 3,
-          overflow: "hidden"
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          width: pctD + "%",
-          height: "100%",
-          background: +pctD === 100 ? "#1D9E75" : "#EF9F27",
-          borderRadius: 3
-        }
-      })), /*#__PURE__*/React.createElement("span", {
-        style: bdg(+pctD === 100 ? "#1D9E75" : +pctD > 0 ? "#EF9F27" : "#9ca3af", +pctD === 100 ? "#E4F5EE" : +pctD > 0 ? "#FEF3E2" : "#f3f4f6")
-      }, doneC, "/", totC, " \u0623\u062A\u0645\u0651\u062A"))), /*#__PURE__*/React.createElement("div", {
-        style: {
-          padding: "8px 14px"
-        }
-      }, entries.map((e, i) => {
-        const pct = (e.li / FINAL_IDX * 100).toFixed(0);
-        const step = PAPER_STEPS[e.li];
-        return /*#__PURE__*/React.createElement("div", {
-          key: e.key,
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "7px 0",
-            borderBottom: i < entries.length - 1 ? "0.5px solid #f3f4f6" : "none"
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            width: 28,
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: i < 3 ? 18 : 13,
-            color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : e.reached ? "#1D9E75" : "#9ca3af",
-            flexShrink: 0
-          }
-        }, MEDALS[i] || /*#__PURE__*/React.createElement("span", {
-          style: {
-            fontSize: 11,
-            color: "#9ca3af"
-          }
-        }, i + 1)), /*#__PURE__*/React.createElement("div", {
-          style: {
-            width: 80,
-            flexShrink: 0
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            fontSize: 12,
-            fontWeight: 700,
-            color: "#1a2940"
-          }
-        }, e.g), /*#__PURE__*/React.createElement("span", {
-          style: {
-            ...bdg(e.stColor, e.stBg),
-            fontSize: 9,
-            padding: "1px 6px"
-          }
-        }, e.st)), /*#__PURE__*/React.createElement("div", {
-          style: {
-            flex: 1
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 3
-          }
-        }, /*#__PURE__*/React.createElement("span", {
-          style: {
-            fontSize: 10,
-            color: "#6b7280"
-          }
-        }, step?.icon, " ", step?.label), e.rT && /*#__PURE__*/React.createElement("span", {
-          style: {
-            fontSize: 10,
-            color: "#1D9E75",
-            fontWeight: 600
-          }
-        }, "\u23F1 ", e.rT)), /*#__PURE__*/React.createElement("div", {
-          style: {
-            height: 5,
-            background: "#f3f4f6",
-            borderRadius: 3,
-            overflow: "hidden"
-          }
-        }, /*#__PURE__*/React.createElement("div", {
-          style: {
-            width: pct + "%",
-            height: "100%",
-            borderRadius: 3,
-            background: e.isC ? "#534AB7" : e.reached ? "#1D9E75" : e.li > 0 ? "#F97316" : "#e5e7eb"
-          }
-        }))), /*#__PURE__*/React.createElement("div", {
-          style: {
-            width: 86,
-            flexShrink: 0,
-            textAlign: "left"
-          }
-        }, e.isC ? /*#__PURE__*/React.createElement("span", {
-          style: bdg("#534AB7", "#EEEDFE")
-        }, "\u2705 \u0645\u0643\u062A\u0645\u0644") : e.reached ? /*#__PURE__*/React.createElement("span", {
-          style: bdg("#1D9E75", "#E4F5EE")
-        }, "\u2713 \u0631\u064F\u0635\u062F") : e.li > 0 ? /*#__PURE__*/React.createElement("span", {
-          style: bdg("#F97316", "#FFF7ED")
-        }, "\u23F3 \u062C\u0627\u0631\u064D") : /*#__PURE__*/React.createElement("span", {
-          style: bdg("#9ca3af", "#f3f4f6")
-        }, "\u2B1C \u0644\u0645 \u064A\u0628\u062F\u0623")));
-      })));
-    })));
-  })(), tab === "publish" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 14
-    }
-  }, /*#__PURE__*/React.createElement(StageGradeBar, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700
-    }
-  }, "\u0627\u0644\u0646\u0634\u0631 \u0648\u0627\u0644\u0625\u0639\u0644\u0627\u0646 \u2014 ", selGrade), !curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      color: "#9ca3af",
-      textAlign: "center",
-      padding: 20
-    }
-  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644 \u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0645\u0631\u062A\u0628\u0637 \u0628\u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644"), curTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
-      gap: 12
-    }
-  }, curExams.map(ex => {
-    const key = `${stage}-${selGrade}-${ex.subject}`;
-    const li = getLifeIdx(key);
-    const canP = li >= PAPER_STEPS.findIndex(s => s.id === "audited");
-    const isPub = published[key];
-    return /*#__PURE__*/React.createElement("div", {
-      key: ex.id,
-      style: {
-        ...cd,
-        borderRight: `3px solid ${isPub ? "#1D9E75" : canP ? "#EF9F27" : "#e5e7eb"}`
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: 8
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 13,
-        fontWeight: 600
-      }
-    }, ex.subject), /*#__PURE__*/React.createElement("span", {
-      style: bdg(isPub ? "#1D9E75" : canP ? "#EF9F27" : "#9ca3af", isPub ? "#E4F5EE" : canP ? "#FEF3E2" : "#f3f4f6")
-    }, isPub ? "✅ نُشرت" : canP ? "جاهز" : "في الانتظار")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#6b7280",
-        marginBottom: 8
-      }
-    }, PAPER_STEPS[li]?.icon, " ", PAPER_STEPS[li]?.label), /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: 4,
-        background: "#f3f4f6",
-        borderRadius: 2,
-        overflow: "hidden",
-        marginBottom: 10
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: li / FINAL_IDX * 100 + "%",
-        height: "100%",
-        background: stC[stage],
-        borderRadius: 2
-      }
-    })), !isPub && canP && /*#__PURE__*/React.createElement("button", {
-      onClick: () => setPublished(p => ({
-        ...p,
-        [key]: true
-      })),
-      style: {
-        ...btn(stC[stage], "#fff", stC[stage]),
-        width: "100%"
-      }
-    }, "\uD83D\uDCE2 \u0646\u0634\u0631 \u0627\u0644\u0646\u062A\u0627\u0626\u062C"), isPub && /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#1D9E75",
-        padding: "6px 10px",
-        background: "#f0fdf4",
-        borderRadius: 8
-      }
-    }, "\u2705 \u062A\u0645 \u0627\u0644\u0625\u0639\u0644\u0627\u0646 \u0639\u0628\u0631 \u0646\u0648\u0631"), !canP && !isPub && /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#9ca3af"
-      }
-    }, "\u0641\u064A \u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0643\u062A\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0627\u062D\u0644"));
-  })))), editTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "flex-start",
-      justifyContent: "center",
-      zIndex: 100,
-      overflowY: "auto",
-      padding: "20px 0"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      width: 700,
-      maxWidth: "95vw",
-      margin: "auto"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      fontWeight: 700
-    }
-  }, "\u270F\uFE0F \u062A\u0639\u062F\u064A\u0644 \u0627\u0644\u062C\u062F\u0648\u0644"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEditTpl(null),
-    style: {
-      ...btn(),
-      fontSize: 18,
-      padding: "2px 10px"
-    }
-  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0633\u0645 \u0627\u0644\u062C\u062F\u0648\u0644"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: editTpl.name,
-    onChange: e => setEditTpl({
-      ...editTpl,
-      name: e.target.value
-    }),
-    placeholder: "\u0645\u062B\u0627\u0644: \u062C\u062F\u0648\u0644 \u0627\u0644\u0635\u0641\u0648\u0641 1-4"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      fontWeight: 600,
-      marginBottom: 8
-    }
-  }, "\u0627\u0644\u0641\u0635\u0648\u0644 \u0627\u0644\u062A\u064A \u064A\u0646\u0637\u0628\u0642 \u0639\u0644\u064A\u0647\u0627 \u0647\u0630\u0627 \u0627\u0644\u062C\u062F\u0648\u0644"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6,
-      flexWrap: "wrap"
-    }
-  }, GRADES[editTpl.stage].map(g => {
-    const sel = editTpl.appliedTo.includes(g);
-    const takenBy = (tpls[editTpl.stage] || []).find(t => t.id !== editTpl.id && t.appliedTo.includes(g));
-    return /*#__PURE__*/React.createElement("button", {
-      key: g,
-      onClick: () => !takenBy && toggleGradeInTpl(editTpl, g),
-      title: takenBy ? `مرتبط بـ "${takenBy.name}"` : "",
-      style: {
-        ...btn(sel ? stC[editTpl.stage] : takenBy ? "#f9fafb" : "#fff", sel ? "#fff" : takenBy ? "#d1d5db" : "#374151", sel ? stC[editTpl.stage] : takenBy ? "#e5e7eb" : "#d1d5db"),
-        fontSize: 12,
-        padding: "5px 12px",
-        opacity: takenBy ? 0.5 : 1,
-        cursor: takenBy ? "not-allowed" : "pointer"
-      }
-    }, g, " ", sel && "✓", takenBy && /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 9,
-        display: "block",
-        color: "#9ca3af"
-      }
-    }, "\u0645\u0623\u062E\u0648\u0630"));
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#9ca3af",
-      marginTop: 6
-    }
-  }, "\u0627\u0644\u0641\u0635\u0648\u0644 \u0627\u0644\u0631\u0645\u0627\u062F\u064A\u0629 \u0645\u0631\u062A\u0628\u0637\u0629 \u0628\u062C\u062F\u0648\u0644 \u0622\u062E\u0631")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      fontWeight: 600,
-      marginBottom: 8
-    }
-  }, "\u0645\u0648\u0627\u062F \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u0648\u062A\u0648\u0627\u0631\u064A\u062E\u0647\u0627"), /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: 12,
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-    style: {
-      background: "#f9fafb"
-    }
-  }, ["المادة", "التاريخ", "اليوم", "الوقت", "المدة (د)", "حذف"].map(h => /*#__PURE__*/React.createElement("th", {
-    key: h,
-    style: {
-      textAlign: "right",
-      padding: "6px 8px",
-      fontWeight: 600,
-      fontSize: 11,
-      color: "#6b7280",
-      borderBottom: "0.5px solid #e5e7eb"
-    }
-  }, h)))), /*#__PURE__*/React.createElement("tbody", null, editTpl.exams.map((ex, i) => /*#__PURE__*/React.createElement("tr", {
-    key: ex.id,
-    style: {
-      borderBottom: "0.5px solid #f3f4f6"
-    }
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("select", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: ex.subject,
-    onChange: e => {
-      const exs = [...editTpl.exams];
-      exs[i] = {
-        ...exs[i],
-        subject: e.target.value
-      };
-      setEditTpl({
-        ...editTpl,
-        exams: exs
-      });
-    }
-  }, SUBJECTS_BY_STAGE[editTpl.stage].map(s => /*#__PURE__*/React.createElement("option", {
-    key: s
-  }, s)))), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: ex.date,
-    onChange: e => {
-      const exs = [...editTpl.exams];
-      exs[i] = {
-        ...exs[i],
-        date: e.target.value
-      };
-      setEditTpl({
-        ...editTpl,
-        exams: exs
-      });
-    },
-    placeholder: "1446/12/15"
-  })), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("select", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: ex.day,
-    onChange: e => {
-      const exs = [...editTpl.exams];
-      exs[i] = {
-        ...exs[i],
-        day: e.target.value
-      };
-      setEditTpl({
-        ...editTpl,
-        exams: exs
-      });
-    }
-  }, DAYS.map(d => /*#__PURE__*/React.createElement("option", {
-    key: d
-  }, d)))), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: ex.time,
-    onChange: e => {
-      const exs = [...editTpl.exams];
-      exs[i] = {
-        ...exs[i],
-        time: e.target.value
-      };
-      setEditTpl({
-        ...editTpl,
-        exams: exs
-      });
-    },
-    placeholder: "8:00 \u0635"
-  })), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "number",
-    style: {
-      ...inp,
-      fontSize: 11,
-      width: 70
-    },
-    value: ex.duration,
-    onChange: e => {
-      const exs = [...editTpl.exams];
-      exs[i] = {
-        ...exs[i],
-        duration: +e.target.value
-      };
-      setEditTpl({
-        ...editTpl,
-        exams: exs
-      });
-    }
-  })), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "5px 6px"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => removeExamFromTpl(editTpl, ex.id),
-    style: {
-      ...btn("#FCEBEB", "#E24B4A", "#E24B4A"),
-      fontSize: 11,
-      padding: "3px 8px"
-    }
-  }, "\u062D\u0630\u0641")))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "10px",
-      background: "#f9fafb",
-      borderRadius: 8,
-      border: "0.5px dashed #d1d5db"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      fontWeight: 600,
-      color: "#374151",
-      marginBottom: 8
-    }
-  }, "\u0625\u0636\u0627\u0641\u0629 \u0645\u0627\u062F\u0629 \u062C\u062F\u064A\u062F\u0629"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "2fr 1.2fr 1fr 1fr 0.8fr",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("select", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: newExamRow.subject,
-    onChange: e => setNewExamRow({
-      ...newExamRow,
-      subject: e.target.value
-    })
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "\u2014 \u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u0627\u062F\u0629 \u2014"), SUBJECTS_BY_STAGE[editTpl.stage].map(s => /*#__PURE__*/React.createElement("option", {
-    key: s
-  }, s))), /*#__PURE__*/React.createElement("input", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: newExamRow.date,
-    onChange: e => setNewExamRow({
-      ...newExamRow,
-      date: e.target.value
-    }),
-    placeholder: "1446/12/15"
-  }), /*#__PURE__*/React.createElement("select", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: newExamRow.day,
-    onChange: e => setNewExamRow({
-      ...newExamRow,
-      day: e.target.value
-    })
-  }, DAYS.map(d => /*#__PURE__*/React.createElement("option", {
-    key: d
-  }, d))), /*#__PURE__*/React.createElement("input", {
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: newExamRow.time,
-    onChange: e => setNewExamRow({
-      ...newExamRow,
-      time: e.target.value
-    }),
-    placeholder: "8:00 \u0635"
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "number",
-    style: {
-      ...inp,
-      fontSize: 11
-    },
-    value: newExamRow.duration,
-    onChange: e => setNewExamRow({
-      ...newExamRow,
-      duration: +e.target.value
-    }),
-    placeholder: "90"
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => addExamToTpl(editTpl),
-    style: {
-      ...btn("#1D4ED8", "#fff", "#1D4ED8"),
-      marginTop: 8,
-      fontSize: 11
-    }
-  }, "+ \u0625\u0636\u0627\u0641\u0629"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      paddingTop: 12,
-      borderTop: "0.5px solid #e5e7eb"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => saveTpl(editTpl),
-    style: btn("#1D9E75", "#fff", "#1D9E75")
-  }, "\uD83D\uDCBE \u062D\u0641\u0638 \u0627\u0644\u062C\u062F\u0648\u0644"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEditTpl(null),
-    style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621")))), showNewTpl && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.45)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 100
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      width: 380,
-      maxWidth: "92vw"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      marginBottom: 14
-    }
-  }, "\u0625\u0646\u0634\u0627\u0621 \u062C\u062F\u0648\u0644 \u062C\u062F\u064A\u062F"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0633\u0645 \u0627\u0644\u062C\u062F\u0648\u0644"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: newTplName,
-    onChange: e => setNewTplName(e.target.value),
-    placeholder: "\u0645\u062B\u0627\u0644: \u062C\u062F\u0648\u0644 \u0627\u0644\u0635\u0641\u0648\u0641 1-4 \u0627\u0644\u0627\u0628\u062A\u062F\u0627\u0626\u064A"
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 0,
-      borderRadius: 8,
-      overflow: "hidden",
-      border: "0.5px solid #e5e7eb"
-    }
-  }, STAGES.map(s => /*#__PURE__*/React.createElement("button", {
-    key: s,
-    onClick: () => setNewTplStage(s),
-    style: {
-      flex: 1,
-      padding: "8px",
-      border: "none",
-      background: newTplStage === s ? stC[s] : "#fff",
-      color: newTplStage === s ? "#fff" : "#6b7280",
-      fontSize: 12,
-      cursor: "pointer",
-      fontFamily: "Tajawal,sans-serif",
-      fontWeight: newTplStage === s ? 600 : 400
-    }
-  }, s))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: createTpl,
-    style: btn("#1D4ED8", "#fff", "#1D4ED8")
-  }, "\u0625\u0646\u0634\u0627\u0621 \u0648\u062A\u0639\u062F\u064A\u0644 \u2190"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setShowNewTpl(false),
-    style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621")))), editSubj && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.45)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 100
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cd,
-      width: 400,
-      maxWidth: "92vw"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      marginBottom: 14
-    }
-  }, "\u062A\u0639\u062F\u064A\u0644 \u2014 ", editSubj.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0639\u0644\u0645"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: editSubj.teacher,
-    onChange: e => setEditSubj({
-      ...editSubj,
-      teacher: e.target.value
-    })
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0627\u0644\u0645\u0634\u0631\u0641"), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: editSubj.supervisor,
-    onChange: e => setEditSubj({
-      ...editSubj,
-      supervisor: e.target.value
-    })
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u0646\u0633\u0628\u0629 \u0627\u0643\u062A\u0645\u0627\u0644 \u0627\u0644\u0645\u0646\u0647\u062C"), /*#__PURE__*/React.createElement("input", {
-    type: "number",
-    min: 0,
-    max: 100,
-    style: inp,
-    value: editSubj.curriculumDone,
-    onChange: e => setEditSubj({
-      ...editSubj,
-      curriculumDone: +e.target.value
-    })
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
-    }
-  }, "\u062D\u0627\u0644\u0629 \u0627\u0644\u0623\u0633\u0626\u0644\u0629"), /*#__PURE__*/React.createElement("select", {
-    style: inp,
-    value: editSubj.questionStatus,
-    onChange: e => setEditSubj({
-      ...editSubj,
-      questionStatus: e.target.value
-    })
-  }, Q_STATUSES.map(s => /*#__PURE__*/React.createElement("option", {
-    key: s
-  }, s))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      ["teacher", "supervisor", "curriculumDone", "questionStatus"].forEach(f => updateSubjectField(editSubj._stage, editSubj.id, f, editSubj[f]));
-      setEditSubj(null);
-    },
-    style: btn("#1D4ED8", "#fff", "#1D4ED8")
-  }, "\u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setEditSubj(null),
-    style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621")))));
+  const updateInv=(gi,field,val)=>{setCommittees(p=>{const ns={...p};ns[stage]={...ns[stage]};const rooms=[...ns[stage][selGrade]];rooms[gi]={...rooms[gi],[field]:val};ns[stage][selGrade]=rooms;return ns;});};
+  const attCol=a=>a==="حاضر"?"#1D9E75":a==="غائب"?"#E24B4A":"#EF9F27";
+  const attBg =a=>a==="حاضر"?"#E4F5EE":a==="غائب"?"#FCEBEB":"#FEF3E2";
+
+  const saveTpl = (tpl)=>{setTpls(p=>{const ns={...p};ns[tpl.stage]=ns[tpl.stage].map(t=>t.id===tpl.id?tpl:t);return ns;});setEditTpl(null);};
+  const deleteTpl=(st,id)=>setTpls(p=>({...p,[st]:p[st].filter(t=>t.id!==id)}));
+  const cloneTpl=(st,tpl)=>{const clone={...tpl,id:"tpl-"+Date.now(),name:tpl.name+" (نسخة)",appliedTo:[],exams:tpl.exams.map(e=>({...e,id:"e"+Math.random()}))};setTpls(p=>({...p,[st]:[...p[st],clone]}));};
+  const createTpl=()=>{if(!newTplName)return;const t={id:"tpl-"+Date.now(),name:newTplName,appliedTo:[],exams:[]};setTpls(p=>({...p,[newTplStage]:[...p[newTplStage],t]}));setShowNewTpl(false);setNewTplName("");setEditTpl({...t,stage:newTplStage});};
+  const addExamToTpl=(tpl)=>{if(!newExamRow.subject||!newExamRow.date)return;const ex={...newExamRow,id:"e"+Date.now()};const updated={...tpl,exams:[...tpl.exams,ex]};setEditTpl(updated);setNewExamRow({subject:"",date:"",day:"الأحد",time:"8:00 ص",duration:90,room:""});};
+  const removeExamFromTpl=(tpl,eid)=>setEditTpl({...tpl,exams:tpl.exams.filter(e=>e.id!==eid)});
+  const toggleGradeInTpl=(tpl,g)=>{const has=tpl.appliedTo.includes(g);setEditTpl({...tpl,appliedTo:has?tpl.appliedTo.filter(x=>x!==g):[...tpl.appliedTo,g]});};
+
+  const allStageStats=STAGES.map(st=>({st,done:(subjects[st]||[]).filter(s=>s.curriculumDone===100).length,total:(subjects[st]||[]).length,approved:(subjects[st]||[]).filter(s=>["معتمدة","مطبوعة"].includes(s.questionStatus)).length}));
+
+  const StageGradeBar=()=>(
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
+      <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"0.5px solid #e5e7eb"}}>
+        {STAGES.map(s=><button key={s} onClick={()=>{setStage(s);setSelGrade(GRADES[s][0]);}} style={{padding:"6px 14px",border:"none",background:stage===s?stC[s]:"#fff",color:stage===s?"#fff":"#6b7280",fontSize:12,cursor:"pointer",fontFamily:"Tajawal,sans-serif",fontWeight:stage===s?600:400}}>{s}</button>)}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {GRADES[stage].map(g=>{
+          const hasTpl=!!(tpls[stage]||[]).find(t=>t.appliedTo.includes(g));
+          return <button key={g} onClick={()=>setSelGrade(g)} style={{...btn(selGrade===g?stC[stage]:"#fff",selGrade===g?"#fff":"#374151",selGrade===g?stC[stage]:hasTpl?"#1D9E75":"#d1d5db"),fontSize:11,padding:"4px 10px",position:"relative"}}>
+            {g}{hasTpl&&<span style={{position:"absolute",top:-3,left:-3,width:8,height:8,borderRadius:"50%",background:"#1D9E75",border:"1px solid #fff"}}/>}
+          </button>;
+        })}
+      </div>
+      <div style={{fontSize:10,color:"#9ca3af"}}>● = يوجد جدول</div>
+    </div>
+  );
+
+  return (
+    <div style={{fontFamily:"Tajawal,sans-serif",direction:"rtl",minHeight:"100vh",background:"#f3f4f6"}}>
+      <div style={{background:"#1a2940",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:"#fff"}}>نظام الاختبارات النهائية المتكامل</div>
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:1}}>الفصل الدراسي الثالث 1446هـ</div>
+        </div>
+        <button style={btn("#1D9E75","#fff","#1D9E75")}>🖨️ طباعة</button>
+      </div>
+      <div style={{background:"#fff",borderBottom:"0.5px solid #e5e7eb",display:"flex",overflowX:"auto"}}>
+        {TABS.map(t=><div key={t.id} onClick={()=>setTab(t.id)} style={{display:"flex",alignItems:"center",gap:5,padding:"10px 14px",fontSize:11,cursor:"pointer",borderBottom:tab===t.id?"3px solid #378ADD":"3px solid transparent",color:tab===t.id?"#378ADD":"#6b7280",fontWeight:tab===t.id?700:400,whiteSpace:"nowrap"}}><span>{t.icon}</span>{t.label}</div>)}
+      </div>
+
+      <div style={{padding:"16px 20px"}}>
+
+        {tab==="dashboard"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{fontSize:15,fontWeight:700}}>لوحة المتابعة العامة</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+              {allStageStats.map(({st,done,total,approved})=>(
+                <div key={st} style={{...cd,borderTop:`3px solid ${stC[st]}`}}>
+                  <div style={{fontSize:13,fontWeight:700,color:stC[st],marginBottom:10}}>المرحلة {st}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <div style={{padding:"8px",background:stB[st],borderRadius:8}}><div style={{fontSize:10,color:"#6b7280"}}>اكتمال المنهج</div><div style={{fontSize:18,fontWeight:700,color:stC[st]}}>{done}/{total}</div></div>
+                    <div style={{padding:"8px",background:"#FAEEDA",borderRadius:8}}><div style={{fontSize:10,color:"#6b7280"}}>أسئلة معتمدة</div><div style={{fontSize:18,fontWeight:700,color:"#b45309"}}>{approved}/{total}</div></div>
+                    <div style={{padding:"8px",background:"#EEEDFE",borderRadius:8,gridColumn:"1/-1"}}><div style={{fontSize:10,color:"#6b7280"}}>جداول مُبنية</div><div style={{fontSize:18,fontWeight:700,color:"#534AB7"}}>{(tpls[st]||[]).length} جدول — {(tpls[st]||[]).reduce((a,t)=>a+t.appliedTo.length,0)} فصل مُربط</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={cd}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>🔄 خط سير ورقة الاختبار — جميع الفصول والمواد</div>
+              <div style={{display:"flex",gap:14,fontSize:11,marginBottom:10}}>
+                {[["#1D9E75","مكتمل"],["#F97316","جارٍ"],["#fff","لم يبدأ"]].map(([bg,l])=><span key={l} style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:12,borderRadius:3,background:bg,display:"inline-block",border:"0.5px solid #e5e7eb"}}/>{l}</span>)}
+              </div>
+              <div style={{overflowX:"auto"}}>
+                {STAGES.map(st=>{
+                  const allGrades=GRADES[st];
+                  const allSubs=[...new Set((tpls[st]||[]).flatMap(t=>t.exams.map(e=>e.subject)))];
+                  if(!allSubs.length) return null;
+                  return (
+                    <div key={st} style={{marginBottom:16}}>
+                      <div style={{fontSize:11,fontWeight:700,color:stC[st],marginBottom:5,padding:"3px 8px",background:stB[st],borderRadius:5,display:"inline-block"}}>المرحلة {st}</div>
+                      <div style={{overflowX:"auto"}}>
+                        <table style={{borderCollapse:"collapse",fontSize:10}}>
+                          <thead><tr>
+                            <th style={{textAlign:"right",padding:"5px 8px",fontWeight:600,color:"#6b7280",background:"#f9fafb",border:"0.5px solid #e5e7eb",minWidth:60}}>الفصل</th>
+                            {allSubs.map(sub=><th key={sub} style={{padding:"5px 6px",fontWeight:600,color:"#374151",background:"#f9fafb",border:"0.5px solid #e5e7eb",whiteSpace:"nowrap",minWidth:76}}>{sub}</th>)}
+                          </tr></thead>
+                          <tbody>
+                            {allGrades.map(g=>{
+                              const gExams=getGradeExams(tpls,st,g);
+                              return (
+                                <tr key={g}>
+                                  <td style={{padding:"5px 8px",fontWeight:700,color:"#374151",background:"#f9fafb",border:"0.5px solid #e5e7eb",whiteSpace:"nowrap"}}>{g}</td>
+                                  {allSubs.map(sub=>{
+                                    const hasExam=gExams.some(e=>e.subject===sub);
+                                    if(!hasExam) return <td key={sub} style={{padding:"3px",border:"0.5px solid #e5e7eb"}}><div style={{background:"#f9fafb",borderRadius:4,padding:"5px",textAlign:"center",fontSize:9,color:"#d1d5db"}}>—</div></td>;
+                                    const key=`${st}-${g}-${sub}`;
+                                    const li=getLifeIdx(key);
+                                    const isC=li===FINAL_IDX,isS=li>0;
+                                    const bg=isC?"#1D9E75":isS?"#F97316":"#fff";
+                                    const step=PAPER_STEPS[li];
+                                    return (
+                                      <td key={sub} style={{padding:"3px",border:"0.5px solid #e5e7eb"}}>
+                                        <div onClick={()=>{setTab("lifecycle");setStage(st);setSelGrade(g);setSelExam(key);}} title={step?.label}
+                                          style={{background:bg,borderRadius:4,padding:"4px 3px",textAlign:"center",cursor:"pointer",border:isS&&!isC?"1px solid #ea8000":"1px solid transparent"}}>
+                                          <div style={{fontSize:12}}>{step?.icon}</div>
+                                          <div style={{fontSize:8,color:isC||isS?"#fff":"#9ca3af",marginTop:1,lineHeight:1.2}}>{step?.label}</div>
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="schedules"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700}}>🏗️ بناء جداول الاختبارات</div>
+                <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>ابنِ الجدول مرة واحدة ثم طبّقه على الفصول التي تنطبق عليها</div>
+              </div>
+              <button onClick={()=>setShowNewTpl(true)} style={btn("#1D4ED8","#fff","#1D4ED8")}>+ جدول جديد</button>
+            </div>
+            {STAGES.map(st=>(
+              <div key={st}>
+                <div style={{fontSize:13,fontWeight:700,color:stC[st],marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{padding:"3px 10px",background:stB[st],borderRadius:6}}>المرحلة {st}</span>
+                  <span style={{fontSize:11,fontWeight:400,color:"#9ca3af"}}>{(tpls[st]||[]).length} جدول — {(tpls[st]||[]).reduce((a,t)=>a+t.appliedTo.length,0)} فصل مُربط</span>
+                </div>
+                {(tpls[st]||[]).length===0&&<div style={{...cd,color:"#9ca3af",fontSize:12,textAlign:"center",padding:20}}>لا يوجد جداول — اضغط "+ جدول جديد"</div>}
+                {(tpls[st]||[]).map(tpl=>(
+                  <div key={tpl.id} style={{...cd,marginBottom:10,borderRight:`3px solid ${stC[st]}`}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700}}>{tpl.name}</div>
+                        <div style={{fontSize:11,color:"#6b7280",marginTop:3,display:"flex",flexWrap:"wrap",gap:4}}>
+                          {tpl.appliedTo.length===0?<span style={{color:"#E24B4A"}}>⚠️ لم يُطبَّق على أي فصل</span>:tpl.appliedTo.map(g=><span key={g} style={bdg(stC[st],stB[st])}>{g}</span>)}
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:6}}>
+                        <button onClick={()=>setEditTpl({...tpl,stage:st})} style={btn("#E6F1FB","#1D4ED8","#1D4ED8")}>✏️ تعديل</button>
+                        <button onClick={()=>cloneTpl(st,tpl)} style={btn("#EEEDFE","#534AB7","#534AB7")}>📋 نسخ</button>
+                        <button onClick={()=>deleteTpl(st,tpl.id)} style={btn("#FCEBEB","#E24B4A","#E24B4A")}>🗑️ حذف</button>
+                      </div>
+                    </div>
+                    <div style={{overflowX:"auto"}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                        <thead><tr style={{background:"#f9fafb"}}>{["المادة","التاريخ","اليوم","الوقت","المدة"].map(h=><th key={h} style={{textAlign:"right",padding:"6px 8px",fontWeight:600,fontSize:10,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                        <tbody>{tpl.exams.map((ex,i)=><tr key={ex.id} style={{borderBottom:"0.5px solid #f3f4f6",background:i%2===0?"#fff":"#fafafa"}}><td style={{padding:"6px 8px",fontWeight:600}}>{ex.subject}</td><td style={{padding:"6px 8px",color:"#374151"}}>{ex.date}</td><td style={{padding:"6px 8px",color:"#6b7280"}}>{ex.day}</td><td style={{padding:"6px 8px",color:"#6b7280"}}>{ex.time}</td><td style={{padding:"6px 8px",color:"#6b7280"}}>{ex.duration} د</td></tr>)}</tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="curriculum"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>متابعة اكتمال المنهج — {stage}</div>
+            <div style={cd}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead><tr style={{background:"#f9fafb"}}>{["المادة","المعلم","المشرف","نسبة الاكتمال","الحالة","حالة الأسئلة","إجراء"].map(h=><th key={h} style={{textAlign:"right",padding:"8px 10px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                <tbody>{curSubjects.map(sub=>{const done=sub.curriculumDone===100,warn=sub.curriculumDone<80;return(
+                  <tr key={sub.id} style={{borderBottom:"0.5px solid #f3f4f6"}}>
+                    <td style={{padding:"9px 10px",fontWeight:600}}>{sub.name}</td>
+                    <td style={{padding:"9px 10px",fontSize:11}}>{sub.teacher}</td>
+                    <td style={{padding:"9px 10px",fontSize:11,color:"#6b7280"}}>{sub.supervisor}</td>
+                    <td style={{padding:"9px 10px",minWidth:160}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{flex:1,height:7,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}}><div style={{width:sub.curriculumDone+"%",height:"100%",background:done?"#1D9E75":warn?"#E24B4A":"#EF9F27",borderRadius:4}}/></div>
+                        <input type="number" min={0} max={100} value={sub.curriculumDone} onChange={e=>updateSubjectField(stage,sub.id,"curriculumDone",Math.min(100,Math.max(0,+e.target.value)))} style={{width:48,padding:"2px 5px",border:"0.5px solid #d1d5db",borderRadius:6,fontSize:12,textAlign:"center",fontFamily:"Tajawal,sans-serif"}}/>
+                        <span style={{fontSize:11}}>%</span>
+                      </div>
+                    </td>
+                    <td style={{padding:"9px 10px"}}><span style={bdg(done?"#1D9E75":warn?"#E24B4A":"#EF9F27",done?"#E4F5EE":warn?"#FCEBEB":"#FEF3E2")}>{done?"مكتمل ✓":warn?"متأخر ⚠️":"جارٍ"}</span></td>
+                    <td style={{padding:"9px 10px"}}><span style={bdg(QSC[sub.questionStatus],QSB[sub.questionStatus])}>{sub.questionStatus}</span></td>
+                    <td style={{padding:"9px 10px"}}><button onClick={()=>setEditSubj({...sub,_stage:stage})} style={{...btn(),fontSize:11,padding:"3px 8px"}}>تعديل</button></td>
+                  </tr>
+                );})}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {tab==="questions"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>الأسئلة والاعتماد — {stage}</div>
+            <div style={{display:"flex",gap:0,overflowX:"auto",marginBottom:4}}>
+              {["تسليم المعلم ←","مراجعة المشرف ←","الاعتماد ←","طباعة وتصوير"].map((s,i)=><div key={i} style={{flex:1,textAlign:"center",padding:"7px 4px",background:["#E6F1FB","#FAEEDA","#EEEDFE","#E4F5EE"][i],fontSize:11,fontWeight:600,color:["#1D4ED8","#b45309","#534AB7","#1D9E75"][i],borderRadius:i===0?"8px 0 0 8px":i===3?"0 8px 8px 0":"0",minWidth:100}}>{s}</div>)}
+            </div>
+            <div style={cd}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead><tr style={{background:"#f9fafb"}}>{["المادة","المعلم","التسليم","المشرف","حالة المراجعة","الطباعة","إجراء"].map(h=><th key={h} style={{textAlign:"right",padding:"8px 9px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                <tbody>{curSubjects.map(sub=>(
+                  <tr key={sub.id} style={{borderBottom:"0.5px solid #f3f4f6"}}>
+                    <td style={{padding:"9px 9px",fontWeight:600}}>{sub.name}</td>
+                    <td style={{padding:"9px 9px",fontSize:11}}>{sub.teacher}</td>
+                    <td style={{padding:"9px 9px"}}>{sub.submitted?<span style={bdg("#1D9E75","#E4F5EE")}>✓ سُلِّمت</span>:<button onClick={()=>updateSubjectField(stage,sub.id,"submitted",true)} style={{...btn("#1D9E75","#fff","#1D9E75"),fontSize:10,padding:"3px 8px"}}>تسجيل التسليم</button>}</td>
+                    <td style={{padding:"9px 9px",fontSize:11,color:"#6b7280"}}>{sub.supervisor}</td>
+                    <td style={{padding:"9px 9px"}}><select value={sub.questionStatus} onChange={e=>updateSubjectField(stage,sub.id,"questionStatus",e.target.value)} style={{padding:"3px 7px",border:"0.5px solid #d1d5db",borderRadius:6,fontSize:11,background:QSB[sub.questionStatus],color:QSC[sub.questionStatus],fontFamily:"Tajawal,sans-serif"}}>{Q_STATUSES.map(s=><option key={s}>{s}</option>)}</select></td>
+                    <td style={{padding:"9px 9px"}}>{sub.questionStatus==="مطبوعة"?<span style={bdg("#534AB7","#EEEDFE")}>✓ مطبوعة</span>:sub.questionStatus==="معتمدة"?<button onClick={()=>updateSubjectField(stage,sub.id,"questionStatus","مطبوعة")} style={{...btn("#534AB7","#fff","#534AB7"),fontSize:10,padding:"3px 8px"}}>طباعة</button>:<span style={{color:"#9ca3af"}}>—</span>}</td>
+                    <td style={{padding:"9px 9px"}}><button onClick={()=>setEditSubj({...sub,_stage:stage})} style={{...btn(),fontSize:11,padding:"3px 8px"}}>تعديل</button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {tab==="committees"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:14,fontWeight:700}}>لجان الاختبار — {selGrade}</div>
+              <button onClick={()=>setCommittees(p=>{const ns={...p};ns[stage]={...ns[stage]};ns[stage][selGrade]=[...ns[stage][selGrade],{room:"",inv1:"",inv2:"",inv1Present:null,inv2Present:null,inv1Note:"",inv2Note:"",inv1Time:"",inv2Time:""}];return ns;})} style={btn("#1D4ED8","#fff","#1D4ED8")}>+ إضافة قاعة</button>
+            </div>
+            {!curTpl&&<div style={{...cd,color:"#9ca3af",textAlign:"center",padding:20}}>هذا الفصل لا يرتبط بجدول اختبارات بعد</div>}
+            {curTpl&&<div style={{padding:"8px 12px",background:stB[stage],borderRadius:8,fontSize:11,color:stC[stage]}}><strong>الجدول المُطبَّق:</strong> {curTpl.name} — {curExams.length} مادة</div>}
+            {curComm.map((room,i)=>(
+              <div key={i} style={{...cd,borderRight:`3px solid ${stC[stage]}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={{fontSize:13,fontWeight:600}}>القاعة {room.room||`10${i+1}`} — اللجنة {i+1}</div>
+                  <button onClick={()=>{setCommittees(p=>{const ns={...p};ns[stage][selGrade]=ns[stage][selGrade].filter((_,j)=>j!==i);return ns;});}} style={{...btn("#FCEBEB","#E24B4A","#E24B4A"),fontSize:10,padding:"3px 8px"}}>حذف</button>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,fontSize:12}}>
+                  <div><div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>رقم القاعة</div><input style={inp} value={room.room} onChange={e=>updateInv(i,"room",e.target.value)} placeholder="101"/></div>
+                  <div><div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>المراقب الأول</div><select style={inp} value={room.inv1} onChange={e=>updateInv(i,"inv1",e.target.value)}><option value="">— اختر —</option>{INV_POOL.map(v=><option key={v}>{v}</option>)}</select></div>
+                  <div><div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>المراقب الثاني</div><select style={inp} value={room.inv2} onChange={e=>updateInv(i,"inv2",e.target.value)}><option value="">— اختر —</option>{INV_POOL.map(v=><option key={v}>{v}</option>)}</select></div>
+                </div>
+                <div style={{marginTop:10,padding:"10px",background:"#f9fafb",borderRadius:8}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:6}}>طلاب القاعة ({selGrade})</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{curStudents.map(st=><span key={st.id} style={{fontSize:11,padding:"3px 10px",background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:20}}>{st.name}</span>)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="invigilators"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>مراقبة تواجد المراقبين — {selGrade}</div>
+            {curComm.map((room,i)=>(
+              <div key={i} style={{...cd,borderRight:`3px solid ${stC[stage]}`}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>القاعة {room.room||`10${i+1}`} — اللجنة {i+1}</div>
+                {[["inv1","المراقب الأول"],["inv2","المراقب الثاني"]].map(([prefix,label])=>(
+                  <div key={prefix} style={{marginBottom:12,padding:"12px",background:"#f9fafb",borderRadius:10}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                      <div><div style={{fontSize:12,fontWeight:600}}>{label}</div><div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{room[prefix]||"غير محدد"}</div></div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>updateInv(i,`${prefix}Present`,true)} style={{...btn(room[`${prefix}Present`]===true?"#1D9E75":"#fff",room[`${prefix}Present`]===true?"#fff":"#374151",room[`${prefix}Present`]===true?"#1D9E75":"#d1d5db"),fontSize:11,padding:"5px 14px"}}>✓ حاضر</button>
+                        <button onClick={()=>updateInv(i,`${prefix}Present`,false)} style={{...btn(room[`${prefix}Present`]===false?"#E24B4A":"#fff",room[`${prefix}Present`]===false?"#fff":"#374151",room[`${prefix}Present`]===false?"#E24B4A":"#d1d5db"),fontSize:11,padding:"5px 14px"}}>✗ غائب</button>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                      <div><div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>وقت الحضور</div><input style={inp} value={room[`${prefix}Time`]} onChange={e=>updateInv(i,`${prefix}Time`,e.target.value)} placeholder="7:55 ص"/></div>
+                      <div><div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>ملاحظة</div><input style={inp} value={room[`${prefix}Note`]} onChange={e=>updateInv(i,`${prefix}Note`,e.target.value)} placeholder="أي ملاحظة..."/></div>
+                    </div>
+                    {room[`${prefix}Present`]===false&&<div style={{marginTop:8,padding:"7px 10px",background:"#FCEBEB",borderRadius:8,fontSize:11,color:"#E24B4A"}}>⚠️ غائب — يستوجب تعيين بديل فوراً</div>}
+                    {room[`${prefix}Present`]===true&&room[`${prefix}Time`]&&room[`${prefix}Time`]>"8:00"&&<div style={{marginTop:8,padding:"7px 10px",background:"#FEF3E2",borderRadius:8,fontSize:11,color:"#b45309"}}>⏰ حضر متأخراً ({room[`${prefix}Time`]})</div>}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="attendance"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>حضور وأوراق الطلاب — {selGrade}</div>
+            {!curTpl&&<div style={{...cd,color:"#9ca3af",textAlign:"center",padding:20}}>لا يوجد جدول اختبارات مرتبط بهذا الفصل</div>}
+            {curTpl&&<>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {curExams.map(ex=>{const key=`${stage}-${selGrade}-${ex.subject}`;return<button key={ex.id} onClick={()=>setAttExamKey(key)} style={{...btn(attExamKey===key?"#1D4ED8":"#fff",attExamKey===key?"#fff":"#374151",attExamKey===key?"#1D4ED8":"#d1d5db"),fontSize:11}}>{ex.subject}<br/><span style={{fontSize:9,opacity:.7}}>{ex.date}</span></button>;})}
+              </div>
+              {attExamKey&&(()=>{
+                const sub=curExams.find(e=>`${stage}-${selGrade}-${e.subject}`===attExamKey)?.subject;
+                if(!sub)return null;
+                const present=curStudents.filter(s=>(s.attendance[sub]||"حاضر")==="حاضر").length;
+                const recvd=curStudents.filter(s=>s.paperReceived[sub]==="استلم").length;
+                const submd=curStudents.filter(s=>s.paperSubmitted[sub]).length;
+                const solved=curStudents.filter(s=>s.paperSolved[sub]).length;
+                return(
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                      {[["حاضر",present,"#1D9E75","#E4F5EE"],["استلم",recvd,"#378ADD","#E6F1FB"],["سلّم",submd,"#534AB7","#EEEDFE"],["مكتوبة",solved,"#1a7a5e","#E4F5EE"]].map(([l,v,c,bg])=><div key={l} style={{padding:"10px",background:bg,borderRadius:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:10,color:"#6b7280"}}>{l}</div></div>)}
+                    </div>
+                    <div style={cd}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                        <thead><tr style={{background:"#f9fafb"}}>{["#","الطالب","الحضور","استلم الورقة","سلّم الورقة","الورقة مكتوبة","ملاحظات"].map(h=><th key={h} style={{textAlign:"right",padding:"7px 9px",fontWeight:600,fontSize:10,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                        <tbody>
+                          {curStudents.map((st,idx)=>{
+                            const att=st.attendance[sub]||"حاضر",recv=st.paperReceived[sub]||"لم يستلم",subm=st.paperSubmitted[sub]||false,slvd=st.paperSolved[sub]||false;
+                            return(<tr key={st.id} style={{borderBottom:"0.5px solid #f3f4f6",background:att==="غائب"?"#fff9f9":idx%2===0?"#fff":"#fafafa"}}>
+                              <td style={{padding:"8px 9px",color:"#9ca3af"}}>{idx+1}</td>
+                              <td style={{padding:"8px 9px",fontWeight:500}}>{st.name}</td>
+                              <td style={{padding:"5px 9px"}}><button onClick={()=>toggleField(st.id,sub,"attendance")} style={{...bdg(attCol(att),attBg(att)),border:"none",cursor:"pointer",fontFamily:"Tajawal,sans-serif",padding:"4px 10px"}}>{att}</button></td>
+                              <td style={{padding:"5px 9px"}}><button onClick={()=>toggleField(st.id,sub,"paperReceived")} style={{padding:"4px 10px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"Tajawal,sans-serif",fontSize:11,fontWeight:500,background:recv==="استلم"?"#E4F5EE":"#f3f4f6",color:recv==="استلم"?"#1D9E75":"#6b7280"}}>{recv==="استلم"?"✓ استلم":"لم يستلم"}</button></td>
+                              <td style={{padding:"5px 9px"}}><button onClick={()=>toggleField(st.id,sub,"paperSubmitted")} style={{padding:"4px 10px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"Tajawal,sans-serif",fontSize:11,fontWeight:500,background:subm?"#E4F5EE":"#FCEBEB",color:subm?"#1D9E75":"#E24B4A"}}>{subm?"✓ سلّم":"لم يسلّم"}</button></td>
+                              <td style={{padding:"5px 9px"}}><button onClick={()=>toggleField(st.id,sub,"paperSolved")} style={{padding:"4px 10px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"Tajawal,sans-serif",fontSize:11,fontWeight:500,background:slvd?"#E4F5EE":"#FEF3E2",color:slvd?"#1D9E75":"#EF9F27"}}>{slvd?"✓ مكتوبة":"غير مكتوبة ⚠️"}</button></td>
+                              <td style={{padding:"5px 9px",fontSize:10,color:"#9ca3af"}}>{att==="غائب"&&<span style={{color:"#E24B4A"}}>غائب</span>}{!slvd&&att!=="غائب"&&subm&&<span style={{color:"#EF9F27"}}>فارغة!</span>}</td>
+                            </tr>);
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>}
+          </div>
+        )}
+
+        {tab==="daily_report"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>التقرير اليومي لمشرف اللجان — {selGrade}</div>
+            <div style={cd}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>التاريخ</div><input style={inp} value={dailyReport.date} onChange={e=>setDailyReport(p=>({...p,date:e.target.value}))}/></div>
+                <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>مشرف اللجان</div><input style={inp} value={dailyReport.supervisor} onChange={e=>setDailyReport(p=>({...p,supervisor:e.target.value}))}/></div>
+                <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>التقييم العام</div>
+                  <select style={{...inp,background:RATING_COLOR[dailyReport.generalRating]+"22",color:RATING_COLOR[dailyReport.generalRating],fontWeight:600}} value={dailyReport.generalRating} onChange={e=>setDailyReport(p=>({...p,generalRating:e.target.value}))}>
+                    {RATING_OPTIONS.map(r=><option key={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,marginBottom:14}}>
+                {RATING_OPTIONS.map(r=><button key={r} onClick={()=>setDailyReport(p=>({...p,generalRating:r}))} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`2px solid ${dailyReport.generalRating===r?RATING_COLOR[r]:"#e5e7eb"}`,background:dailyReport.generalRating===r?RATING_COLOR[r]+"22":"#fff",color:RATING_COLOR[r],fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"Tajawal,sans-serif"}}>{r}</button>)}
+              </div>
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>الملاحظات العامة</div>
+                <textarea value={dailyReport.notes} onChange={e=>setDailyReport(p=>({...p,notes:e.target.value}))} placeholder="ملاحظاتك العامة عن يوم الاختبار..." style={{...inp,minHeight:80,resize:"vertical"}}/>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setReportSaved(true)} style={btn("#1a2940","#fff","#1a2940")}>💾 حفظ التقرير</button>
+                <button style={btn("#1D9E75","#fff","#1D9E75")}>🖨️ طباعة</button>
+              </div>
+              {reportSaved&&<div style={{marginTop:10,padding:"8px 12px",background:"#E4F5EE",borderRadius:8,fontSize:12,color:"#1D9E75"}}>✅ تم حفظ التقرير</div>}
+            </div>
+          </div>
+        )}
+
+        {tab==="lifecycle"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>خط سير ورقة الاختبار — {selGrade}</div>
+            {!curTpl&&<div style={{...cd,color:"#9ca3af",textAlign:"center",padding:20}}>لا يوجد جدول اختبارات مرتبط بهذا الفصل</div>}
+            {curTpl&&<>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {curExams.map(ex=>{const key=`${stage}-${selGrade}-${ex.subject}`;const idx=getLifeIdx(key);const isC=idx===FINAL_IDX,isS=idx>0;return<button key={ex.id} onClick={()=>setSelExam(key)} style={{...btn(selExam===key?"#1a2940":"#fff",selExam===key?"#fff":"#374151",selExam===key?"#1a2940":"#d1d5db"),fontSize:11,position:"relative",paddingBottom:12}}>{ex.subject}<br/><span style={{fontSize:9,opacity:.6}}>{ex.date}</span><div style={{position:"absolute",bottom:0,left:0,right:0,height:3,borderRadius:"0 0 8px 8px",background:isC?"#1D9E75":isS?"#F97316":"#e5e7eb"}}/></button>;})}
+              </div>
+              {selExam&&(()=>{
+                const curIdx=getLifeIdx(selExam);const step=PAPER_STEPS[curIdx];
+                const ex=curExams.find(e=>`${stage}-${selGrade}-${e.subject}`===selExam);
+                return(<div>
+                  <div style={{...cd,overflowX:"auto",marginBottom:14}}>
+                    <div style={{display:"flex",alignItems:"flex-start",minWidth:900}}>
+                      {PAPER_STEPS.map((s,i)=>{const done=i<curIdx,active=i===curIdx;return(
+                        <div key={s.id} style={{display:"flex",alignItems:"center",flex:1}}>
+                          <div style={{textAlign:"center",flex:1}}>
+                            <div style={{width:34,height:34,borderRadius:"50%",margin:"0 auto 4px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:done?"#1D9E75":active?stC[stage]:"#f3f4f6",color:done||active?"#fff":"#9ca3af",border:active?`2px solid ${stC[stage]}`:"none"}}>{done?"✓":s.icon}</div>
+                            <div style={{fontSize:8,color:done?"#1D9E75":active?stC[stage]:"#9ca3af",fontWeight:active||done?600:400,lineHeight:1.3,maxWidth:66,margin:"0 auto"}}>{s.label}</div>
+                          </div>
+                          {i<FINAL_IDX&&<div style={{width:16,height:2,background:done?"#1D9E75":"#e5e7eb",flexShrink:0}}/>}
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                  <div style={{...cd,borderRight:`4px solid ${stC[stage]}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{fontSize:28}}>{step?.icon}</div>
+                      <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>المرحلة الحالية: {step?.label}</div>{ex&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{ex.subject} — {ex.date} — {ex.time}</div>}</div>
+                      {curIdx<FINAL_IDX?<button onClick={()=>advanceLife(selExam)} style={btn(stC[stage],"#fff",stC[stage])}>التالي: {PAPER_STEPS[curIdx+1]?.label} ←</button>:<span style={bdg("#1D9E75","#E4F5EE")}>✅ اكتمل</span>}
+                    </div>
+                  </div>
+                </div>);
+              })()}
+            </>}
+          </div>
+        )}
+
+        {tab==="ranking"&&(()=>{
+          const rows=[];
+          STAGES.forEach(st=>{GRADES[st].forEach(g=>{getGradeExams(tpls,st,g).forEach(ex=>{const key=`${st}-${g}-${ex.subject}`;const li=getLifeIdx(key);const reached=li>=TARGET_IDX,isC=li===FINAL_IDX,rT=stepTimes[key]?.["recorded"]||null;rows.push({key,st,g,subject:ex.subject,li,reached,isC,rT,stColor:stC[st],stBg:stB[st]});});});});
+          const gradeMap={};rows.forEach(r=>{const gk=`${r.st}|${r.g}`;if(!gradeMap[gk])gradeMap[gk]={st:r.st,g:r.g,total:0,done:0,sumIdx:0,stColor:r.stColor,stBg:r.stBg};gradeMap[gk].total++;gradeMap[gk].sumIdx+=r.li;if(r.reached)gradeMap[gk].done++;});
+          const gradeRanking=Object.values(gradeMap).sort((a,b)=>{const pa=a.done/a.total,pb=b.done/b.total;if(pb!==pa)return pb-pa;return(b.sumIdx/b.total)-(a.sumIdx/a.total);});
+          const allSubs=[...new Set(rows.map(r=>r.subject))];
+          return(
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div><div style={{fontSize:15,fontWeight:700}}>🏆 التقرير التنافسي — سباق الرصد في نور</div><div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>ترتيب الشعب حسب سرعة إتمام خطوات الاختبار والوصول لمرحلة الرصد</div></div>
+              </div>
+              <div style={cd}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>ترتيب الشعب — نسبة الإنجاز الكلية</div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                  <thead><tr style={{background:"#f9fafb"}}>{["الترتيب","الشعبة","المرحلة","أتمّت الرصد","نسبة الإنجاز","الحالة"].map(h=><th key={h} style={{textAlign:"right",padding:"8px 10px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {gradeRanking.map((r,i)=>{const pct=(r.done/r.total*100).toFixed(0);return(
+                      <tr key={`${r.st}-${r.g}`} style={{borderBottom:"0.5px solid #f3f4f6",background:i===0?"#fffbeb":i===1?"#f9fafb":i===2?"#fff8f0":"#fff"}}>
+                        <td style={{padding:"10px",fontWeight:700,fontSize:15}}>{MEDALS[i]||<span style={{color:"#9ca3af",fontSize:12}}>{i+1}</span>}</td>
+                        <td style={{padding:"10px",fontWeight:700,fontSize:13}}>{r.g}</td>
+                        <td style={{padding:"10px"}}><span style={bdg(r.stColor,r.stBg)}>{r.st}</span></td>
+                        <td style={{padding:"10px",fontWeight:600,color:r.done===r.total?"#1D9E75":"#374151"}}>{r.done}/{r.total}</td>
+                        <td style={{padding:"10px",minWidth:140}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
+                            <div style={{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:+pct===100?"#1D9E75":+pct>=60?"#EF9F27":"#E24B4A",borderRadius:4}}/></div>
+                            <span style={{fontWeight:700,color:+pct===100?"#1D9E75":+pct>=60?"#EF9F27":"#E24B4A",minWidth:36}}>{pct}%</span>
+                          </div>
+                        </td>
+                        <td style={{padding:"10px"}}>{r.done===r.total?<span style={bdg("#1D9E75","#E4F5EE")}>✅ مكتمل</span>:r.done>0?<span style={bdg("#EF9F27","#FEF3E2")}>⏳ جارٍ</span>:<span style={bdg("#9ca3af","#f3f4f6")}>⬜ لم يبدأ</span>}</td>
+                      </tr>
+                    );})}
+                  </tbody>
+                </table>
+              </div>
+              <div style={cd}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>🎯 التنافس لكل مادة — عبر جميع الشعب</div>
+                <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>لكل مادة: من أسرع شعبة أتمّت الرصد في نظام نور؟</div>
+                {allSubs.map(sub=>{
+                  const entries=rows.filter(r=>r.subject===sub).sort((a,b)=>{if(a.reached&&!b.reached)return -1;if(!a.reached&&b.reached)return 1;if(a.reached&&b.reached){if(a.rT&&b.rT)return a.rT.localeCompare(b.rT);if(a.rT)return -1;if(b.rT)return 1;}return b.li-a.li;});
+                  if(!entries.length)return null;
+                  const doneC=entries.filter(e=>e.reached).length,totC=entries.length,pctD=(doneC/totC*100).toFixed(0);
+                  return(
+                    <div key={sub} style={{marginBottom:14,border:"0.5px solid #e5e7eb",borderRadius:10,overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#f9fafb",borderBottom:"0.5px solid #e5e7eb"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#1a2940"}}>{sub}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div style={{width:100,height:5,background:"#e5e7eb",borderRadius:3,overflow:"hidden"}}><div style={{width:pctD+"%",height:"100%",background:+pctD===100?"#1D9E75":"#EF9F27",borderRadius:3}}/></div>
+                          <span style={bdg(+pctD===100?"#1D9E75":+pctD>0?"#EF9F27":"#9ca3af",+pctD===100?"#E4F5EE":+pctD>0?"#FEF3E2":"#f3f4f6")}>{doneC}/{totC} أتمّت</span>
+                        </div>
+                      </div>
+                      <div style={{padding:"8px 14px"}}>
+                        {entries.map((e,i)=>{const pct=((e.li/FINAL_IDX)*100).toFixed(0);const step=PAPER_STEPS[e.li];return(
+                          <div key={e.key} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:i<entries.length-1?"0.5px solid #f3f4f6":"none"}}>
+                            <div style={{width:28,textAlign:"center",fontWeight:700,fontSize:i<3?18:13,color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":e.reached?"#1D9E75":"#9ca3af",flexShrink:0}}>{MEDALS[i]||<span style={{fontSize:11,color:"#9ca3af"}}>{i+1}</span>}</div>
+                            <div style={{width:80,flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"#1a2940"}}>{e.g}</div><span style={{...bdg(e.stColor,e.stBg),fontSize:9,padding:"1px 6px"}}>{e.st}</span></div>
+                            <div style={{flex:1}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}><span style={{fontSize:10,color:"#6b7280"}}>{step?.icon} {step?.label}</span>{e.rT&&<span style={{fontSize:10,color:"#1D9E75",fontWeight:600}}>⏱ {e.rT}</span>}</div>
+                              <div style={{height:5,background:"#f3f4f6",borderRadius:3,overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",borderRadius:3,background:e.isC?"#534AB7":e.reached?"#1D9E75":e.li>0?"#F97316":"#e5e7eb"}}/></div>
+                            </div>
+                            <div style={{width:86,flexShrink:0,textAlign:"left"}}>{e.isC?<span style={bdg("#534AB7","#EEEDFE")}>✅ مكتمل</span>:e.reached?<span style={bdg("#1D9E75","#E4F5EE")}>✓ رُصد</span>:e.li>0?<span style={bdg("#F97316","#FFF7ED")}>⏳ جارٍ</span>:<span style={bdg("#9ca3af","#f3f4f6")}>⬜ لم يبدأ</span>}</div>
+                          </div>
+                        );})}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {tab==="publish"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <StageGradeBar/>
+            <div style={{fontSize:14,fontWeight:700}}>النشر والإعلان — {selGrade}</div>
+            {!curTpl&&<div style={{...cd,color:"#9ca3af",textAlign:"center",padding:20}}>لا يوجد جدول اختبارات مرتبط بهذا الفصل</div>}
+            {curTpl&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+              {curExams.map(ex=>{const key=`${stage}-${selGrade}-${ex.subject}`;const li=getLifeIdx(key);const canP=li>=PAPER_STEPS.findIndex(s=>s.id==="audited");const isPub=published[key];return(
+                <div key={ex.id} style={{...cd,borderRight:`3px solid ${isPub?"#1D9E75":canP?"#EF9F27":"#e5e7eb"}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><div style={{fontSize:13,fontWeight:600}}>{ex.subject}</div><span style={bdg(isPub?"#1D9E75":canP?"#EF9F27":"#9ca3af",isPub?"#E4F5EE":canP?"#FEF3E2":"#f3f4f6")}>{isPub?"✅ نُشرت":canP?"جاهز":"في الانتظار"}</span></div>
+                  <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>{PAPER_STEPS[li]?.icon} {PAPER_STEPS[li]?.label}</div>
+                  <div style={{height:4,background:"#f3f4f6",borderRadius:2,overflow:"hidden",marginBottom:10}}><div style={{width:(li/FINAL_IDX*100)+"%",height:"100%",background:stC[stage],borderRadius:2}}/></div>
+                  {!isPub&&canP&&<button onClick={()=>setPublished(p=>({...p,[key]:true}))} style={{...btn(stC[stage],"#fff",stC[stage]),width:"100%"}}>📢 نشر النتائج</button>}
+                  {isPub&&<div style={{fontSize:11,color:"#1D9E75",padding:"6px 10px",background:"#f0fdf4",borderRadius:8}}>✅ تم الإعلان عبر نور</div>}
+                  {!canP&&!isPub&&<div style={{fontSize:11,color:"#9ca3af"}}>في انتظار اكتمال المراحل</div>}
+                </div>
+              );})}
+            </div>}
+          </div>
+        )}
+      </div>
+
+      {editTpl&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:100,overflowY:"auto",padding:"20px 0"}}>
+          <div style={{...cd,width:700,maxWidth:"95vw",margin:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div style={{fontSize:15,fontWeight:700}}>✏️ تعديل الجدول</div>
+              <button onClick={()=>setEditTpl(null)} style={{...btn(),fontSize:18,padding:"2px 10px"}}>✕</button>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>اسم الجدول</div>
+              <input style={inp} value={editTpl.name} onChange={e=>setEditTpl({...editTpl,name:e.target.value})} placeholder="مثال: جدول الصفوف 1-4"/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:600,marginBottom:8}}>الفصول التي ينطبق عليها هذا الجدول</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {GRADES[editTpl.stage].map(g=>{
+                  const sel=editTpl.appliedTo.includes(g);
+                  const takenBy=(tpls[editTpl.stage]||[]).find(t=>t.id!==editTpl.id&&t.appliedTo.includes(g));
+                  return(
+                    <button key={g} onClick={()=>!takenBy&&toggleGradeInTpl(editTpl,g)} title={takenBy?`مرتبط بـ "${takenBy.name}"`:""}
+                      style={{...btn(sel?stC[editTpl.stage]:takenBy?"#f9fafb":"#fff",sel?"#fff":takenBy?"#d1d5db":"#374151",sel?stC[editTpl.stage]:takenBy?"#e5e7eb":"#d1d5db"),fontSize:12,padding:"5px 12px",opacity:takenBy?0.5:1,cursor:takenBy?"not-allowed":"pointer"}}>
+                      {g} {sel&&"✓"}{takenBy&&<span style={{fontSize:9,display:"block",color:"#9ca3af"}}>مأخوذ</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{fontSize:10,color:"#9ca3af",marginTop:6}}>الفصول الرمادية مرتبطة بجدول آخر</div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:600,marginBottom:8}}>مواد الاختبار وتواريخها</div>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:10}}>
+                <thead><tr style={{background:"#f9fafb"}}>{["المادة","التاريخ","اليوم","الوقت","المدة (د)","حذف"].map(h=><th key={h} style={{textAlign:"right",padding:"6px 8px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {editTpl.exams.map((ex,i)=>(
+                    <tr key={ex.id} style={{borderBottom:"0.5px solid #f3f4f6"}}>
+                      <td style={{padding:"5px 6px"}}><select style={{...inp,fontSize:11}} value={ex.subject} onChange={e=>{const exs=[...editTpl.exams];exs[i]={...exs[i],subject:e.target.value};setEditTpl({...editTpl,exams:exs});}}>{SUBJECTS_BY_STAGE[editTpl.stage].map(s=><option key={s}>{s}</option>)}</select></td>
+                      <td style={{padding:"5px 6px"}}><input style={{...inp,fontSize:11}} value={ex.date} onChange={e=>{const exs=[...editTpl.exams];exs[i]={...exs[i],date:e.target.value};setEditTpl({...editTpl,exams:exs});}} placeholder="1446/12/15"/></td>
+                      <td style={{padding:"5px 6px"}}><select style={{...inp,fontSize:11}} value={ex.day} onChange={e=>{const exs=[...editTpl.exams];exs[i]={...exs[i],day:e.target.value};setEditTpl({...editTpl,exams:exs});}}>{DAYS.map(d=><option key={d}>{d}</option>)}</select></td>
+                      <td style={{padding:"5px 6px"}}><input style={{...inp,fontSize:11}} value={ex.time} onChange={e=>{const exs=[...editTpl.exams];exs[i]={...exs[i],time:e.target.value};setEditTpl({...editTpl,exams:exs});}} placeholder="8:00 ص"/></td>
+                      <td style={{padding:"5px 6px"}}><input type="number" style={{...inp,fontSize:11,width:70}} value={ex.duration} onChange={e=>{const exs=[...editTpl.exams];exs[i]={...exs[i],duration:+e.target.value};setEditTpl({...editTpl,exams:exs});}}/></td>
+                      <td style={{padding:"5px 6px"}}><button onClick={()=>removeExamFromTpl(editTpl,ex.id)} style={{...btn("#FCEBEB","#E24B4A","#E24B4A"),fontSize:11,padding:"3px 8px"}}>حذف</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{padding:"10px",background:"#f9fafb",borderRadius:8,border:"0.5px dashed #d1d5db"}}>
+                <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:8}}>إضافة مادة جديدة</div>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr 1fr 0.8fr",gap:8}}>
+                  <select style={{...inp,fontSize:11}} value={newExamRow.subject} onChange={e=>setNewExamRow({...newExamRow,subject:e.target.value})}><option value="">— اختر المادة —</option>{SUBJECTS_BY_STAGE[editTpl.stage].map(s=><option key={s}>{s}</option>)}</select>
+                  <input style={{...inp,fontSize:11}} value={newExamRow.date} onChange={e=>setNewExamRow({...newExamRow,date:e.target.value})} placeholder="1446/12/15"/>
+                  <select style={{...inp,fontSize:11}} value={newExamRow.day} onChange={e=>setNewExamRow({...newExamRow,day:e.target.value})}>{DAYS.map(d=><option key={d}>{d}</option>)}</select>
+                  <input style={{...inp,fontSize:11}} value={newExamRow.time} onChange={e=>setNewExamRow({...newExamRow,time:e.target.value})} placeholder="8:00 ص"/>
+                  <input type="number" style={{...inp,fontSize:11}} value={newExamRow.duration} onChange={e=>setNewExamRow({...newExamRow,duration:+e.target.value})} placeholder="90"/>
+                </div>
+                <button onClick={()=>addExamToTpl(editTpl)} style={{...btn("#1D4ED8","#fff","#1D4ED8"),marginTop:8,fontSize:11}}>+ إضافة</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,paddingTop:12,borderTop:"0.5px solid #e5e7eb"}}>
+              <button onClick={()=>saveTpl(editTpl)} style={btn("#1D9E75","#fff","#1D9E75")}>💾 حفظ الجدول</button>
+              <button onClick={()=>setEditTpl(null)} style={btn()}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewTpl&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+          <div style={{...cd,width:380,maxWidth:"92vw"}}>
+            <div style={{fontSize:14,fontWeight:600,marginBottom:14}}>إنشاء جدول جديد</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>اسم الجدول</div><input style={inp} value={newTplName} onChange={e=>setNewTplName(e.target.value)} placeholder="مثال: جدول الصفوف 1-4 الابتدائي"/></div>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>المرحلة الدراسية</div>
+                <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"0.5px solid #e5e7eb"}}>
+                  {STAGES.map(s=><button key={s} onClick={()=>setNewTplStage(s)} style={{flex:1,padding:"8px",border:"none",background:newTplStage===s?stC[s]:"#fff",color:newTplStage===s?"#fff":"#6b7280",fontSize:12,cursor:"pointer",fontFamily:"Tajawal,sans-serif",fontWeight:newTplStage===s?600:400}}>{s}</button>)}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:14}}>
+              <button onClick={createTpl} style={btn("#1D4ED8","#fff","#1D4ED8")}>إنشاء وتعديل ←</button>
+              <button onClick={()=>setShowNewTpl(false)} style={btn()}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editSubj&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+          <div style={{...cd,width:400,maxWidth:"92vw"}}>
+            <div style={{fontSize:14,fontWeight:600,marginBottom:14}}>تعديل — {editSubj.name}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>المعلم</div><input style={inp} value={editSubj.teacher} onChange={e=>setEditSubj({...editSubj,teacher:e.target.value})}/></div>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>المشرف</div><input style={inp} value={editSubj.supervisor} onChange={e=>setEditSubj({...editSubj,supervisor:e.target.value})}/></div>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>نسبة اكتمال المنهج</div><input type="number" min={0} max={100} style={inp} value={editSubj.curriculumDone} onChange={e=>setEditSubj({...editSubj,curriculumDone:+e.target.value})}/></div>
+              <div><div style={{fontSize:11,color:"#6b7280",marginBottom:4}}>حالة الأسئلة</div><select style={inp} value={editSubj.questionStatus} onChange={e=>setEditSubj({...editSubj,questionStatus:e.target.value})}>{Q_STATUSES.map(s=><option key={s}>{s}</option>)}</select></div>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:14}}>
+              <button onClick={()=>{["teacher","supervisor","curriculumDone","questionStatus"].forEach(f=>updateSubjectField(editSubj._stage,editSubj.id,f,editSubj[f]));setEditSubj(null);}} style={btn("#1D4ED8","#fff","#1D4ED8")}>حفظ</button>
+              <button onClick={()=>setEditSubj(null)} style={btn()}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 
-// Initialize
 const _root = ReactDOM.createRoot(document.getElementById("root"));
 _root.render(React.createElement(App, null));
 
