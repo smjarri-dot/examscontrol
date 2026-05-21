@@ -610,22 +610,13 @@ function AppWithFirebase() {
 
 
 function App({ initSchool, initAccounts }) {
+  // ALL hooks must be at top - no hooks after conditional returns
   const [account,     setAccount]     = useState(null);
   const [showAccMgr,  setShowAccMgr]  = useState(false);
   const [school,      setSchool]      = useState(initSchool || loadSchool());
-
-  const updateSchool = (s) => { saveSchool(s); setSchool(s); };
-
-  if (!account) return <LoginScreen onLogin={setAccount} initAccounts={initAccounts}/>;
-
-  const allowedTabs = TABS.filter(t => canAccessTab(account, t.id)).map(t => ({
-    ...t,
-    label: TAB_LABELS_OVERRIDE[t.id] ? TAB_LABELS_OVERRIDE[t.id] : t.label,
-  }));
-
-  const [tab,setTab]         = useState(allowedTabs[0]?.id || "dashboard");
-  const [selGrade,setSelGrade] = useState((account.assignedGrades && account.assignedGrades[0]) || GRADES["ابتدائي"][0]);
-  const [stage,setStage]     = useState(account.assignedStage || "ابتدائي");
+  const [tab,         setTab]         = useState("dashboard");
+  const [stage,       setStage]       = useState("ابتدائي");
+  const [selGrade,    setSelGrade]    = useState(GRADES["ابتدائي"][0]);
   const [tpls,setTpls]       = useState(initScheduleTpls());
   const [subjects,setSubjects] = useState(initSubjects());
   const [students,setStudents] = useState(initStudents());
@@ -643,6 +634,15 @@ function App({ initSchool, initAccounts }) {
   const [newTplName,setNewTplName] = useState("");
   const [newTplStage,setNewTplStage] = useState("ابتدائي");
   const [newExamRow,setNewExamRow] = useState({subject:"",date:"",day:"الأحد",time:"8:00 ص",duration:90,room:""});
+
+  // ── Computed (after all hooks) ──
+  const updateSchool = (s) => { saveSchool(s); setSchool(s); };
+  if (!account) return <LoginScreen onLogin={setAccount} initAccounts={initAccounts}/>;
+
+  const allowedTabs = TABS.filter(t => canAccessTab(account, t.id)).map(t => ({
+    ...t,
+    label: TAB_LABELS_OVERRIDE[t.id] ? TAB_LABELS_OVERRIDE[t.id] : t.label,
+  }));
 
   // ── Firebase real-time sync ──
   React.useEffect(() => {
