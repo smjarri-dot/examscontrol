@@ -16,28 +16,21 @@
 </head>
 <body>
   <div id="root"></div>
-
-  <!-- React -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Firebase Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // Init Firebase
     firebase.initializeApp({
-      apiKey: "AIzaSyAZEzzOJjKKzNJBKO4wjI9HUxn2hAteLO0",
-      authDomain: "examscontrol-9ef0a.firebaseapp.com",
-      projectId: "examscontrol-9ef0a",
-      storageBucket: "examscontrol-9ef0a.firebasestorage.app",
-      messagingSenderId: "757408733521",
-      appId: "1:757408733521:web:cd87ce610f7e0c9761db70"
+      apiKey:"AIzaSyAZEzzOJjKKzNJBKO4wjI9HUxn2hAteLO0",
+      authDomain:"examscontrol-9ef0a.firebaseapp.com",
+      projectId:"examscontrol-9ef0a",
+      storageBucket:"examscontrol-9ef0a.firebasestorage.app",
+      messagingSenderId:"757408733521",
+      appId:"1:757408733521:web:cd87ce610f7e0c9761db70"
     });
     window._db = firebase.firestore();
   </script>
-
   <script>
 // ══════════════════════════════════════════
 // CONSTANTS
@@ -2146,35 +2139,33 @@ function AppMain({
         borderRadius: 5,
         display: "inline-block"
       }
-    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", {
-      style: {
-        overflowX: "auto"
-      }
-    }, /*#__PURE__*/React.createElement("table", {
+    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("table", {
       style: {
         borderCollapse: "collapse",
-        fontSize: 10
+        width: "100%"
       }
     }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
       style: {
         textAlign: "right",
-        padding: "5px 8px",
-        fontWeight: 600,
-        color: "#6b7280",
+        padding: "8px 12px",
+        fontWeight: 700,
+        fontSize: 13,
+        color: "#374151",
         background: "#f9fafb",
         border: "0.5px solid #e5e7eb",
-        minWidth: 60
+        minWidth: 70
       }
     }, "\u0627\u0644\u0641\u0635\u0644"), allSubs.map(sub => /*#__PURE__*/React.createElement("th", {
       key: sub,
       style: {
-        padding: "5px 6px",
+        padding: "8px 6px",
         fontWeight: 600,
+        fontSize: 12,
         color: "#374151",
         background: "#f9fafb",
         border: "0.5px solid #e5e7eb",
         whiteSpace: "nowrap",
-        minWidth: 76
+        textAlign: "center"
       }
     }, sub)))), /*#__PURE__*/React.createElement("tbody", null, allGrades.map(g => {
       const gExams = getGradeExams(tpls, st, g);
@@ -2182,8 +2173,9 @@ function AppMain({
         key: g
       }, /*#__PURE__*/React.createElement("td", {
         style: {
-          padding: "5px 8px",
+          padding: "8px 12px",
           fontWeight: 700,
+          fontSize: 13,
           color: "#374151",
           background: "#f9fafb",
           border: "0.5px solid #e5e7eb",
@@ -2194,16 +2186,16 @@ function AppMain({
         if (!hasExam) return /*#__PURE__*/React.createElement("td", {
           key: sub,
           style: {
-            padding: "3px",
+            padding: "4px",
             border: "0.5px solid #e5e7eb"
           }
         }, /*#__PURE__*/React.createElement("div", {
           style: {
             background: "#f9fafb",
-            borderRadius: 4,
-            padding: "5px",
+            borderRadius: 6,
+            padding: "10px",
             textAlign: "center",
-            fontSize: 9,
+            fontSize: 11,
             color: "#d1d5db"
           }
         }, "\u2014"));
@@ -2216,7 +2208,7 @@ function AppMain({
         return /*#__PURE__*/React.createElement("td", {
           key: sub,
           style: {
-            padding: "3px",
+            padding: "4px",
             border: "0.5px solid #e5e7eb"
           }
         }, /*#__PURE__*/React.createElement("div", {
@@ -2229,22 +2221,23 @@ function AppMain({
           title: step?.label,
           style: {
             background: bg,
-            borderRadius: 4,
-            padding: "4px 3px",
+            borderRadius: 6,
+            padding: "8px 4px",
             textAlign: "center",
             cursor: "pointer",
-            border: isS && !isC ? "1px solid #ea8000" : "1px solid transparent"
+            border: isS && !isC ? "2px solid #ea8000" : "1px solid transparent"
           }
         }, /*#__PURE__*/React.createElement("div", {
           style: {
-            fontSize: 12
+            fontSize: 18
           }
         }, step?.icon), /*#__PURE__*/React.createElement("div", {
           style: {
-            fontSize: 8,
+            fontSize: 11,
             color: isC || isS ? "#fff" : "#9ca3af",
-            marginTop: 1,
-            lineHeight: 1.2
+            marginTop: 3,
+            lineHeight: 1.3,
+            fontWeight: isS ? 600 : 400
           }
         }, step?.label)));
       }));
@@ -4458,8 +4451,6 @@ function AppMain({
   }, "\u0625\u0644\u063A\u0627\u0621")))));
 }
 
-
-    // Render
     const _root = ReactDOM.createRoot(document.getElementById("root"));
     _root.render(React.createElement(App, null));
   </script>
