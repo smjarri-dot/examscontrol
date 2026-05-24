@@ -1159,7 +1159,6 @@ function App() {
   useEffect(() => {
     window._currentUser = user;
     window._logout = () => setUser(null);
-    window._canTab = tabId => canAccTab(user, tabId);
   }, [user]);
   const saveAccounts = async list => {
     setAccounts(list);
@@ -1644,7 +1643,7 @@ function AppMain({
   onShowSchool,
   onShowAccMgr
 }) {
-  const [tab, setTab] = useState("schedules");
+  const [tab, setTab] = useState(TABS.find(t => canAccTab(user, t.id))?.id || "schedules");
   const [stage, setStage] = useState("ابتدائي");
   const [selGrade, setSelGrade] = useState(GRADES["ابتدائي"][0]);
   const [tpls, setTpls] = useState(initScheduleTpls());
@@ -2051,7 +2050,7 @@ function AppMain({
       display: "flex",
       overflowX: "auto"
     }
-  }, TABS.filter(t => window._canTab && window._canTab(t.id)).map(t => /*#__PURE__*/React.createElement("div", {
+  }, TABS.map(t => /*#__PURE__*/React.createElement("div", {
     key: t.id,
     onClick: () => setTab(t.id),
     style: {
