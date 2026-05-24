@@ -2820,6 +2820,14 @@ const PAPER_STEPS = [{
 }];
 const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
 const FINAL_IDX = PAPER_STEPS.length - 1;
+function hijriToGregorian(h) {
+  try {
+    const [y,m,d] = h.split('/').map(Number);
+    if(!y||!m||!d) return '';
+    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    return d+' '+months[((m+8)%12)]+' '+(2024+(y-1446));
+  } catch { return ''; }
+}
 const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
 const MEDALS = ["🥇", "🥈", "🥉"];
 const RATING_OPTIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
@@ -3719,7 +3727,75 @@ function AppMain({
       fontWeight: 700,
       color: "#534AB7"
     }
-  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637")))))), /*#__PURE__*/React.createElement("div", {
+  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637"))))))),
+/*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}},
+  /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
+    /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
+      /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700}}, "\u{1F4CA} \u0625\u0646\u062C\u0627\u0632 \u0634\u0639\u0628 \u0627\u0644\u0645\u0648\u0627\u062F"),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: () => {
+          const subs = [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))];
+          const rows = subs.map(sub => {
+            const all = [];
+            STAGES.forEach(st => GRADES[st].forEach(g => { if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)) all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX); }));
+            const done=all.filter(Boolean).length;
+            return sub+","+Math.round(done/Math.max(all.length,1)*100)+"%,"+done+"/"+all.length;
+          });
+          const csv="\uFEFF\u0634\u0639\u0628\u0629 \u0627\u0644\u0645\u0627\u062f\u0629,\u0646\u0633\u0628\u0629,\u0627\u0644\u0641\u0635\u0648\u0644\n"+rows.join("\n");
+          const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="\u0634\u0639\u0628.csv"; a.click();
+        },
+        style:{padding:"5px 10px",borderRadius:8,border:"0.5px solid #1D9E75",background:"#E4F5EE",color:"#1D9E75",fontSize:11,cursor:"pointer"}
+      }, "\u{1F4E5} CSV")
+    ),
+    /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:8}},
+      [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))].map(sub => {
+        const all=[];
+        STAGES.forEach(st=>GRADES[st].forEach(g=>{if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)) all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX);}));
+        const done=all.filter(Boolean).length, pct=Math.round(done/Math.max(all.length,1)*100);
+        const pc=pct===100?"#1D9E75":pct>=60?"#EF9F27":"#E24B4A";
+        return /*#__PURE__*/React.createElement("div", {key:sub, style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"0.5px solid #f3f4f6"}},
+          /*#__PURE__*/React.createElement("div", {style:{minWidth:120,fontSize:12,fontWeight:600}}, "\u0634\u0639\u0628\u0629 "+sub),
+          /*#__PURE__*/React.createElement("div", {style:{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}},
+            /*#__PURE__*/React.createElement("div", {style:{width:pct+"%",height:"100%",background:pc}})
+          ),
+          /*#__PURE__*/React.createElement("span", {style:{fontWeight:700,color:pc,minWidth:40,textAlign:"left"}}, pct+"%")
+        );
+      })
+    )
+  ),
+  /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
+    /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700,marginBottom:12}}, "\u{1F465} \u062D\u0636\u0648\u0631 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
+    /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8,marginBottom:10}},
+      [["\u062D\u0627\u0636\u0631","#1D9E75","#E4F5EE",
+          Object.values(committees).flatMap(st=>Object.values(st)).flat().filter(r=>r.inv1Present===true||r.inv2Present===true).length],
+       ["\u063A\u0627\u0626\u0628","#E24B4A","#FCEBEB",
+          Object.values(committees).flatMap(st=>Object.values(st)).flat().filter(r=>r.inv1Present===false||r.inv2Present===false).length]
+      ].map(([lbl,c,b,v]) =>
+        /*#__PURE__*/React.createElement("div", {key:lbl, style:{flex:1,padding:"8px",background:b,borderRadius:8,textAlign:"center"}},
+          /*#__PURE__*/React.createElement("div", {style:{fontSize:20,fontWeight:700,color:c}}, v),
+          /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:"#6b7280"}}, lbl)
+        )
+      )
+    ),
+    Object.values(committees).flatMap(st=>Object.values(st)).flat().length===0
+      ? /*#__PURE__*/React.createElement("div", {style:{color:"#9ca3af",fontSize:11,textAlign:"center",padding:10}}, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0644\u062C\u0627\u0646")
+      : /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:4,maxHeight:160,overflowY:"auto"}},
+          Object.entries(committees).flatMap(([st,grades])=>
+            Object.entries(grades).flatMap(([g,rooms])=>
+              rooms.map((room,i)=>{
+                const p1=room.inv1Present,p2=room.inv2Present;
+                return /*#__PURE__*/React.createElement("div", {key:st+g+i, style:{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",background:"#f9fafb",borderRadius:6}},
+                  /*#__PURE__*/React.createElement("span", {style:{fontSize:11,fontWeight:600,minWidth:45}}, "\u0642 "+(room.room||("10"+(i+1)))),
+                  room.inv1&&/*#__PURE__*/React.createElement("span", {style:{fontSize:10,padding:"1px 6px",borderRadius:20,background:p1===true?"#E4F5EE":p1===false?"#FCEBEB":"#f3f4f6",color:p1===true?"#1D9E75":p1===false?"#E24B4A":"#9ca3af"}}, room.inv1+" "+(p1===true?"✓":p1===false?"✗":"?")),
+                  room.inv2&&/*#__PURE__*/React.createElement("span", {style:{fontSize:10,padding:"1px 6px",borderRadius:20,background:p2===true?"#E4F5EE":p2===false?"#FCEBEB":"#f3f4f6",color:p2===true?"#1D9E75":p2===false?"#E24B4A":"#9ca3af"}}, room.inv2+" "+(p2===true?"✓":p2===false?"✗":"?"))
+                );
+              })
+            )
+          )
+        )
+  )
+),
+/*#__PURE__*/React.createElement("div", {
     style: cd
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4334,7 +4410,7 @@ function AppMain({
     }
   }, "\u0644\u062C\u0627\u0646 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8,flexWrap:"wrap"}},
     /*#__PURE__*/React.createElement("button", {onClick:()=>setShowStudentMgr(true), style:btn("#1D9E75","#fff","#1D9E75")}, "\u{1F464} \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0637\u0644\u0627\u0628"),
-    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowRoomBuilder(true), style:btn("#534AB7","#fff","#534AB7")}, "\u{1F3DB} \u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A"),
+    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowRoomBuilder(true), style:btn("#534AB7","#fff","#534AB7")}, "\u{1F3DB}\u{FE0F} \u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A"),
     /*#__PURE__*/React.createElement("button", {onClick:()=>setShowDailyAsgn(true), style:btn("#EF9F27","#1a2940","#EF9F27")}, "\u{1F4CB} \u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
     /*#__PURE__*/React.createElement("button", {
     onClick: () => setCommittees(p => {
@@ -5111,12 +5187,17 @@ function AppMain({
         color: "#6b7280",
         marginTop: 2
       }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
+    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8}},
+      curIdx > 0 && /*#__PURE__*/React.createElement("button", {
+        onClick: () => goBackLife(selExam),
+        style: btn("#f3f4f6","#374151","#d1d5db")
+      }, "\u2192 \u062A\u0631\u0627\u062C\u0639"),
+      curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
       onClick: () => advanceLife(selExam),
       style: btn(stC[stage], "#fff", stC[stage])
     }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
       style: bdg("#1D9E75", "#E4F5EE")
-    }, "\u2705 \u0627\u0643\u062A\u0645\u0644"))));
+    }, "\u2705 \u0627\u0643\u062A\u0645\u0644")))));
   })())), tab === "ranking" && (() => {
     const rows = [];
     STAGES.forEach(st => {
@@ -6124,7 +6205,7 @@ function AppMain({
   }, "\u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEditSubj(null),
     style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621")))));
+  }, "\u0625\u0644\u063A\u0627\u0621"))));
 }
 
     const _root = ReactDOM.createRoot(document.getElementById("root"));
