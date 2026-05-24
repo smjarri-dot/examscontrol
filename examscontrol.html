@@ -3142,8 +3142,15 @@ const getGradeExams = (tpls, stage, grade) => {
   return tpl ? tpl.exams : [];
 };
 const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
-function AppMain() {
-  const [tab, setTab] = useState(TABS.find(t => canAccTab(user, t.id))?.id || "schedules");
+function AppMain({
+  school,
+  user,
+  accounts,
+  onLogout,
+  onShowSchool,
+  onShowAccMgr
+}) {
+  const [tab, setTab] = useState("dashboard");
   const [showStudentMgr, setShowStudentMgr] = useState(false);
   const [showRoomBuilder, setShowRoomBuilder] = useState(false);
   const [showDailyAsgn, setShowDailyAsgn] = useState(false);
@@ -3179,8 +3186,6 @@ function AppMain() {
     duration: 90,
     room: ""
   });
-
-  // Window helpers for InvigilatorView
   React.useEffect(() => {
     window._updateStudentAtt = (st, g, id, key, val) => setStudents(p => {
       const n = {
@@ -3541,7 +3546,7 @@ function AppMain() {
       alignItems: "center",
       justifyContent: "space-between"
     }
-  }, /*#__PURE__*/React.createElement("div", null, school.logo ? /*#__PURE__*/React.createElement("img", {
+  }, /*#__PURE__*/React.createElement("div", null, school?.logo ? /*#__PURE__*/React.createElement("img", {
     src: school.logo,
     style: {
       width: 36,
@@ -3560,13 +3565,13 @@ function AppMain() {
       fontWeight: 700,
       color: "#fff"
     }
-  }, school.name), /*#__PURE__*/React.createElement("div", {
+  }, school?.name || "نظام الاختبارات"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "#94a3b8",
       marginTop: 1
     }
-  }, school.sub))), /*#__PURE__*/React.createElement("div", {
+  }, school?.sub || ""))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -3605,7 +3610,7 @@ function AppMain() {
       display: "flex",
       overflowX: "auto"
     }
-  }, TABS.filter(t => canAccTab(user, t.id)).map(t => /*#__PURE__*/React.createElement("div", {
+  }, TABS.filter(t => user && canAccTab(user, t.id)).map(t => /*#__PURE__*/React.createElement("div", {
     key: t.id,
     onClick: () => setTab(t.id),
     style: {
@@ -5576,7 +5581,7 @@ function AppMain() {
     tpls: tpls,
     stage: stage,
     grade: selGrade,
-    accounts: accounts,
+    accounts: accounts || [],
     onClose: () => setShowDailyAsgn(false)
   }), editTpl && /*#__PURE__*/React.createElement("div", {
     style: {
