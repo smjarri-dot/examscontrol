@@ -1808,11 +1808,8 @@ function RoomBuilder({
   };
 
   // Get grade level number correctly (e.g. "4" from "4/أ", "1م" from "1م/أ")
-  // Show ALL grades in the stage
   const sameLevelSections = GRADES[stage];
   const curLevel = grade.split('/')[0];
-
-  // All students from all sections in stage
   const allStudents = sameLevelSections.flatMap(g => (students[stage]?.[g] || []).map(s => ({
     ...s,
     section: g
@@ -3277,10 +3274,7 @@ function AppMain({
     const i = PAPER_STEPS.findIndex(s => s.id === (examLife[key] || "sealed"));
     return i < 0 ? 0 : i;
   };
-  const goBackLife = key => {
-    const idx = getLifeIdx(key);
-    if (idx > 0) setExamLife(p => ({...p, [key]: PAPER_STEPS[idx-1].id}));
-  };
+  const goBackLife = key => { const i=getLifeIdx(key); if(i>0) setExamLife(p=>({...p,[key]:PAPER_STEPS[i-1].id})); };
   const advanceLife = key => {
     const idx = getLifeIdx(key);
     if (idx < FINAL_IDX) {
@@ -3465,12 +3459,9 @@ function AppMain({
     st,
     done: (subjects[st] || []).filter(s => s.curriculumDone === 100).length,
     total: (subjects[st] || []).length,
-    approved: (subjects[st] || []).filter(s => ["معتمدة","مطبوعة"].includes(s.questionStatus)).length,
-    rooms: Object.values(committees[st]||{}).reduce((a,r)=>a+r.length,0),
-    presentInv: Object.values(committees[st]||{}).flat().filter(r=>r.inv1Present===true||r.inv2Present===true).length,
-    absentInv: Object.values(committees[st]||{}).flat().filter(r=>r.inv1Present===false||r.inv2Present===false).length,
+    approved: (subjects[st] || []).filter(s => ["معتمدة", "مطبوعة"].includes(s.questionStatus)).length
   }));
-    const StageGradeBar = () => /*#__PURE__*/React.createElement("div", {
+  const StageGradeBar = () => /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 10,
@@ -3656,10 +3647,7 @@ function AppMain({
     st,
     done,
     total,
-    approved,
-    rooms,
-    presentInv,
-    absentInv
+    approved
   }) => /*#__PURE__*/React.createElement("div", {
     key: st,
     style: {
@@ -3731,19 +3719,7 @@ function AppMain({
       fontWeight: 700,
       color: "#534AB7"
     }
-  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637"))),
-/*#__PURE__*/React.createElement("div", {style:{padding:"8px",background:"#E6F1FB",borderRadius:8}},
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:10,color:"#6b7280"}}, "\u0639\u062F\u062F \u0627\u0644\u0644\u062C\u0627\u0646"),
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:18,fontWeight:700,color:"#378ADD"}}, rooms)
-),
-/*#__PURE__*/React.createElement("div", {style:{padding:"8px",background:"#E4F5EE",borderRadius:8}},
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:10,color:"#6b7280"}}, "\u062D\u0636\u0648\u0631 \u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:18,fontWeight:700,color:"#1D9E75"}}, presentInv)
-),
-/*#__PURE__*/React.createElement("div", {style:{padding:"8px",background:"#FCEBEB",borderRadius:8}},
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:10,color:"#6b7280"}}, "\u063A\u064A\u0627\u0628 \u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
-  /*#__PURE__*/React.createElement("div",{style:{fontSize:18,fontWeight:700,color:"#E24B4A"}}, absentInv)
-))))), /*#__PURE__*/React.createElement("div", {
+  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637")))))), /*#__PURE__*/React.createElement("div", {
     style: cd
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3905,77 +3881,7 @@ function AppMain({
         }, step?.label)));
       }));
     })))));
-  })))), /*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginTop:14}},
-
-            /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
-              /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
-                /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700}}, "\u{1F4CA} \u0625\u0646\u062C\u0627\u0632 \u0634\u0639\u0628 \u0627\u0644\u0645\u0648\u0627\u062F"),
-                /*#__PURE__*/React.createElement("button", {
-                  onClick: () => {
-                    const subs = [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))];
-                    const rows = subs.map(sub => {
-                      const all = []; STAGES.forEach(st => GRADES[st].forEach(g => { if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)){const li=getLifeIdx(st+"-"+g+"-"+sub);all.push(li>=TARGET_IDX);} }));
-                      const done=all.filter(Boolean).length;
-                      return sub+","+(Math.round(done/Math.max(all.length,1)*100))+"%,"+done+"/"+all.length;
-                    });
-                    const csv="\uFEFFشعبة المادة,نسبة الإنجاز,الفصول المنجزة\n"+rows.join("\n");
-                    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="\u0634\u0639\u0628_\u0627\u0644\u0645\u0648\u0627\u062F.csv"; a.click();
-                  },
-                  style:{padding:"5px 10px",borderRadius:8,border:"0.5px solid #1D9E75",background:"#E4F5EE",color:"#1D9E75",fontSize:11,cursor:"pointer"}
-                }, "\u{1F4E5} CSV")
-              ),
-              /*#__PURE__*/React.createElement("table", {style:{width:"100%",borderCollapse:"collapse",fontSize:12}},
-                /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {style:{background:"#f9fafb"}},
-                  ["شعبة المادة","نسبة الإنجاز","الحالة"].map(h=>/*#__PURE__*/React.createElement("th",{key:h,style:{textAlign:"right",padding:"6px 8px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}},h))
-                )),
-                /*#__PURE__*/React.createElement("tbody", null,
-                  [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))].map(sub => {
-                    const all=[]; STAGES.forEach(st=>GRADES[st].forEach(g=>{if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)){all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX);}}));
-                    const done=all.filter(Boolean).length; const pct=Math.round(done/Math.max(all.length,1)*100);
-                    const pc=pct===100?"#1D9E75":pct>=60?"#EF9F27":"#E24B4A";
-                    return /*#__PURE__*/React.createElement("tr",{key:sub,style:{borderBottom:"0.5px solid #f3f4f6"}},
-                      /*#__PURE__*/React.createElement("td",{style:{padding:"7px 8px",fontWeight:600}}, "\u0634\u0639\u0628\u0629 "+sub),
-                      /*#__PURE__*/React.createElement("td",{style:{padding:"7px 8px"}},
-                        /*#__PURE__*/React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6}},
-                          /*#__PURE__*/React.createElement("div",{style:{flex:1,height:6,background:"#f3f4f6",borderRadius:3,overflow:"hidden"}},
-                            /*#__PURE__*/React.createElement("div",{style:{width:pct+"%",height:"100%",background:pc}})
-                          ),
-                          /*#__PURE__*/React.createElement("span",{style:{fontWeight:700,color:pc,minWidth:36}}, pct+"%")
-                        )
-                      ),
-                      /*#__PURE__*/React.createElement("td",{style:{padding:"7px 8px"}},
-                        /*#__PURE__*/React.createElement("span",{style:{padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600,color:pc,background:pct===100?"#E4F5EE":pct>=60?"#FEF3E2":"#FCEBEB"}},
-                          pct===100?"مكتملة":pct>0?"جارية":"لم تبدأ")
-                      )
-                    );
-                  })
-                )
-              )
-            ),
-
-            /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
-              /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700,marginBottom:12}}, "\u{1F465} \u062D\u0636\u0648\u0631 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
-              Object.values(committees).flatMap(st=>Object.values(st)).flatMap(rooms=>rooms).length === 0
-                ? /*#__PURE__*/React.createElement("div",{style:{color:"#9ca3af",textAlign:"center",padding:20,fontSize:12}}, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0644\u062C\u0627\u0646")
-                : /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:6}},
-                    Object.entries(committees).flatMap(([st,grades])=>
-                      Object.entries(grades).flatMap(([g,rooms])=>
-                        rooms.map((room,i)=>{
-                          const p1=room.inv1Present, p2=room.inv2Present;
-                          return /*#__PURE__*/React.createElement("div",{key:st+g+i,style:{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",background:"#f9fafb",borderRadius:8}},
-                            /*#__PURE__*/React.createElement("span",{style:{fontSize:11,fontWeight:600,minWidth:60}}, "ق "+( room.room||("10"+(i+1)))),
-                            room.inv1 && /*#__PURE__*/React.createElement("span",{style:{fontSize:11,padding:"2px 8px",borderRadius:20,background:p1===true?"#E4F5EE":p1===false?"#FCEBEB":"#f3f4f6",color:p1===true?"#1D9E75":p1===false?"#E24B4A":"#6b7280"}},
-                              room.inv1.replace("أ. ","")+" "+(p1===true?"✓":p1===false?"✗":"?")),
-                            room.inv2 && /*#__PURE__*/React.createElement("span",{style:{fontSize:11,padding:"2px 8px",borderRadius:20,background:p2===true?"#E4F5EE":p2===false?"#FCEBEB":"#f3f4f6",color:p2===true?"#1D9E75":p2===false?"#E24B4A":"#6b7280"}},
-                              room.inv2.replace("أ. ","")+" "+(p2===true?"✓":p2===false?"✗":"?"))
-                          );
-                        })
-                      )
-                    )
-                  )
-            )
-          ),
-tab === "schedules" && /*#__PURE__*/React.createElement("div", {
+  })))), tab === "schedules" && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -4427,18 +4333,9 @@ tab === "schedules" && /*#__PURE__*/React.createElement("div", {
       fontWeight: 700
     }
   }, "\u0644\u062C\u0627\u0646 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8,flexWrap:"wrap"}},
-    /*#__PURE__*/React.createElement("button", {
-      onClick: () => setShowStudentMgr(true),
-      style: btn("#1D9E75","#fff","#1D9E75")
-    }, "\u{1F464} \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0637\u0644\u0627\u0628"),
-    /*#__PURE__*/React.createElement("button", {
-      onClick: () => setShowRoomBuilder(true),
-      style: btn("#534AB7","#fff","#534AB7")
-    }, "\u{1F3DB}\u{FE0F} \u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A"),
-    /*#__PURE__*/React.createElement("button", {
-      onClick: () => setShowDailyAsgn(true),
-      style: btn("#EF9F27","#1a2940","#EF9F27")
-    }, "\u{1F4CB} \u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
+    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowStudentMgr(true), style:btn("#1D9E75","#fff","#1D9E75")}, "\u{1F464} \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0637\u0644\u0627\u0628"),
+    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowRoomBuilder(true), style:btn("#534AB7","#fff","#534AB7")}, "\u{1F3DB} \u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A"),
+    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowDailyAsgn(true), style:btn("#EF9F27","#1a2940","#EF9F27")}, "\u{1F4CB} \u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
     /*#__PURE__*/React.createElement("button", {
     onClick: () => setCommittees(p => {
       const ns = {
@@ -5214,17 +5111,12 @@ tab === "schedules" && /*#__PURE__*/React.createElement("div", {
         color: "#6b7280",
         marginTop: 2
       }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8}},
-      curIdx > 0 && /*#__PURE__*/React.createElement("button", {
-        onClick: () => goBackLife(selExam),
-        style: btn("#f3f4f6","#374151","#d1d5db")
-      }, "\u2192 \u062A\u0631\u0627\u062C\u0639"),
-      curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
+    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
       onClick: () => advanceLife(selExam),
       style: btn(stC[stage], "#fff", stC[stage])
     }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
       style: bdg("#1D9E75", "#E4F5EE")
-    }, "\u2705 \u0627\u0643\u062A\u0645\u0644")))));
+    }, "\u2705 \u0627\u0643\u062A\u0645\u0644"))));
   })())), tab === "ranking" && (() => {
     const rows = [];
     STAGES.forEach(st => {
@@ -6232,7 +6124,7 @@ tab === "schedules" && /*#__PURE__*/React.createElement("div", {
   }, "\u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEditSubj(null),
     style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621"))));
+  }, "\u0625\u0644\u063A\u0627\u0621")))));
 }
 
     const _root = ReactDOM.createRoot(document.getElementById("root"));
