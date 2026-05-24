@@ -2825,6 +2825,7 @@ const PAPER_STEPS = [{
 }];
 const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
 const FINAL_IDX = PAPER_STEPS.length - 1;
+const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
 const MEDALS = ["🥇", "🥈", "🥉"];
 const RATING_OPTIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
 const RATING_COLOR = {
@@ -3277,6 +3278,13 @@ function AppMain({
   const getLifeIdx = key => {
     const i = PAPER_STEPS.findIndex(s => s.id === (examLife[key] || "sealed"));
     return i < 0 ? 0 : i;
+  };
+  const goBackLife = key => {
+    const idx = getLifeIdx(key);
+    if (idx > 0) {
+      const prev = PAPER_STEPS[idx - 1];
+      setExamLife(p => ({...p, [key]: prev.id}));
+    }
   };
   const advanceLife = key => {
     const idx = getLifeIdx(key);
@@ -3843,8 +3851,8 @@ function AppMain({
         }, "\u2014"));
         const key = `${st}-${g}-${sub}`;
         const li = getLifeIdx(key);
-        const isC = li === FINAL_IDX,
-          isS = li > 0;
+        const isC = li >= AUDITED_IDX,
+          isS = li > 0 && !isC;
         const bg = isC ? "#1D9E75" : isS ? "#F97316" : "#fff";
         const step = PAPER_STEPS[li];
         return /*#__PURE__*/React.createElement("td", {
@@ -5110,7 +5118,12 @@ function AppMain({
         color: "#6b7280",
         marginTop: 2
       }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
+    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8}},
+      curIdx > 0 && /*#__PURE__*/React.createElement("button", {
+        onClick: () => goBackLife(selExam),
+        style: btn("#f3f4f6","#374151","#d1d5db")
+      }, "→ تراجع"),
+      curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
       onClick: () => advanceLife(selExam),
       style: btn(stC[stage], "#fff", stC[stage])
     }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
@@ -5124,7 +5137,7 @@ function AppMain({
           const key = `${st}-${g}-${ex.subject}`;
           const li = getLifeIdx(key);
           const reached = li >= TARGET_IDX,
-            isC = li === FINAL_IDX,
+            isC = li >= AUDITED_IDX,
             rT = stepTimes[key]?.["recorded"] || null;
           rows.push({
             key,
@@ -5470,7 +5483,87 @@ function AppMain({
         }, "\u2B1C \u0644\u0645 \u064A\u0628\u062F\u0623")));
       })));
     })));
-  })(), tab === "publish" && /*#__PURE__*/React.createElement("div", {
+  })(), /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16,marginTop:14}},
+              /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
+                /*#__PURE__*/React.createElement("div", null,
+                  /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700}}, "📊 التقرير المجمع — شعب المواد"),
+                  /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:"#9ca3af",marginTop:2}}, "نسبة إنجاز كل شعبة عبر جميع الفصول والمراحل")
+                ),
+                /*#__PURE__*/React.createElement("button", {
+                  onClick: () => {
+                    const rows = [];
+                    [...new Set(Object.values(tpls).flat().flatMap(t=>t.exams.map(e=>e.subject)))].forEach(sub => {
+                      const subRows = [];
+                      STAGES.forEach(st => {
+                        GRADES[st].forEach(g => {
+                          if (getGradeExams(tpls,st,g).some(e=>e.subject===sub)) {
+                            const key = st+"-"+g+"-"+sub;
+                            const li = getLifeIdx(key);
+                            subRows.push({g,st,li,reached:li>=TARGET_IDX});
+                          }
+                        });
+                      });
+                      if (subRows.length) {
+                        const done = subRows.filter(r=>r.reached).length;
+                        rows.push({sub, done, total:subRows.length, pct:Math.round(done/subRows.length*100)});
+                      }
+                    });
+                    const csv = "شعبة المادة,الفصول المنجزة,إجمالي الفصول,نسبة الإنجاز\n" + 
+                      rows.map(r=>r.sub+","+r.done+","+r.total+","+r.pct+"%").join("\n");
+                    const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href=url; a.download="تقرير_الشعب.csv"; a.click();
+                    URL.revokeObjectURL(url);
+                  },
+                  style: btn("#1D9E75","#fff","#1D9E75")
+                }, "📥 تصدير CSV")
+              ),
+              /*#__PURE__*/React.createElement("table", {style:{width:"100%",borderCollapse:"collapse",fontSize:12}},
+                /*#__PURE__*/React.createElement("thead", null,
+                  /*#__PURE__*/React.createElement("tr", {style:{background:"#f9fafb"}},
+                    ["شعبة المادة","الفصول المنجزة","نسبة الإنجاز","الحالة"].map(h=>
+                      /*#__PURE__*/React.createElement("th", {key:h,style:{textAlign:"right",padding:"8px 10px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}}, h)
+                    )
+                  )
+                ),
+                /*#__PURE__*/React.createElement("tbody", null,
+                  [...new Set(Object.values(tpls).flat().flatMap(t=>t.exams.map(e=>e.subject)))].map(sub => {
+                    const subRows = [];
+                    STAGES.forEach(st => {
+                      GRADES[st].forEach(g => {
+                        if (getGradeExams(tpls,st,g).some(e=>e.subject===sub)) {
+                          const key = st+"-"+g+"-"+sub;
+                          subRows.push({li:getLifeIdx(key),reached:getLifeIdx(key)>=TARGET_IDX});
+                        }
+                      });
+                    });
+                    if (!subRows.length) return null;
+                    const done = subRows.filter(r=>r.reached).length;
+                    const pct  = Math.round(done/subRows.length*100);
+                    const pc   = pct===100?"#1D9E75":pct>=60?"#EF9F27":"#E24B4A";
+                    const pb   = pct===100?"#E4F5EE":pct>=60?"#FEF3E2":"#FCEBEB";
+                    return /*#__PURE__*/React.createElement("tr", {key:sub,style:{borderBottom:"0.5px solid #f3f4f6"}},
+                      /*#__PURE__*/React.createElement("td", {style:{padding:"10px",fontWeight:700}}, "شعبة "+sub),
+                      /*#__PURE__*/React.createElement("td", {style:{padding:"10px"}},
+                        /*#__PURE__*/React.createElement("div", {style:{display:"flex",alignItems:"center",gap:8}},
+                          /*#__PURE__*/React.createElement("div", {style:{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}},
+                            /*#__PURE__*/React.createElement("div", {style:{width:pct+"%",height:"100%",background:pc,borderRadius:4}})
+                          ),
+                          /*#__PURE__*/React.createElement("span", {style:{fontWeight:700,color:pc,minWidth:40}}, pct+"%")
+                        )
+                      ),
+                      /*#__PURE__*/React.createElement("td", {style:{padding:"10px",color:"#6b7280"}}, done+"/"+subRows.length),
+                      /*#__PURE__*/React.createElement("td", {style:{padding:"10px"}},
+                        /*#__PURE__*/React.createElement("span", {style:{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,color:pc,background:pb}},
+                          pct===100?"✅ مكتملة":pct>0?"⏳ جارية":"⬜ لم تبدأ"
+                        )
+                      )
+                    );
+                  })
+                )
+              )
+            ),
+tab === "publish" && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
