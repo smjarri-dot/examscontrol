@@ -195,8 +195,10 @@ const DEFAULT_SCHOOL = {
 };
 function canAccTab(account, tabId) {
   if (!account) return false;
+  if (account.role === "admin") return true; // admin always sees all
   if (account.tabs === "all") return true;
-  return (account.tabs || []).includes(tabId);
+  if (!account.tabs || account.tabs.length === 0) return false; // no tabs = no access
+  return account.tabs.includes(tabId);
 }
 
 // ══════════════════════════════════════════
@@ -1148,7 +1150,18 @@ function App() {
   useEffect(() => {
     async function init() {
       const [accData, schData] = await Promise.all([fbGet("system", "accounts"), fbGet("system", "school")]);
-      if (accData?.list) setAccounts(accData.list);
+      if (accData?.list) {
+        // Merge Firebase accounts with defaults to ensure tabs field always exists
+        const merged = accData.list.map(acc => {
+          if (acc.tabs !== undefined) return acc; // already has tabs
+          const def = DEFAULT_ACCOUNTS.find(d => d.id === acc.id);
+          return {
+            ...acc,
+            tabs: def?.tabs || []
+          }; // fallback to default tabs
+        });
+        setAccounts(merged);
+      }
       if (schData?.name) setSchool(schData);
       setReady(true);
     }
@@ -2050,7 +2063,7 @@ function AppMain({
       display: "flex",
       overflowX: "auto"
     }
-  }, TABS.map(t => /*#__PURE__*/React.createElement("div", {
+  }, TABS.filter(t => canAccTab(user, t.id)).map(t => /*#__PURE__*/React.createElement("div", {
     key: t.id,
     onClick: () => setTab(t.id),
     style: {
