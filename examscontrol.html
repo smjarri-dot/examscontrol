@@ -78,24 +78,61 @@ const ROLES_LIST = [{
   icon: "🧑‍🎓",
   multi: true
 }];
+const ALL_TABS_LIST = [{
+  id: "dashboard",
+  label: "الداش بورد"
+}, {
+  id: "schedules",
+  label: "جداول الاختبارات"
+}, {
+  id: "curriculum",
+  label: "اكتمال المنهج"
+}, {
+  id: "questions",
+  label: "الأسئلة والاعتماد"
+}, {
+  id: "committees",
+  label: "لجان الاختبار"
+}, {
+  id: "invigilators",
+  label: "مشرف اللجان"
+}, {
+  id: "attendance",
+  label: "حضور وأوراق الطلاب"
+}, {
+  id: "daily_report",
+  label: "التقرير اليومي"
+}, {
+  id: "lifecycle",
+  label: "خط السير"
+}, {
+  id: "ranking",
+  label: "التنافسي"
+}, {
+  id: "publish",
+  label: "النشر"
+}];
 const DEFAULT_ACCOUNTS = [{
   id: "admin",
   role: "admin",
   name: "مدير المدرسة",
   password: "admin@1446",
-  icon: "🏫"
+  icon: "🏫",
+  tabs: "all"
 }, {
   id: "sup1",
   role: "supervisor",
   name: "مشرف الاختبارات",
   password: "exam@1446",
-  icon: "📋"
+  icon: "📋",
+  tabs: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"]
 }, {
   id: "comm1",
   role: "comm_supervisor",
   name: "أ. خالد العمري",
   password: "comm@1111",
   icon: "👥",
+  tabs: ["invigilators", "daily_report"],
   assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"],
   assignedStage: "ابتدائي"
 }, {
@@ -104,6 +141,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. فهد الشمري",
   password: "comm@2222",
   icon: "👥",
+  tabs: ["invigilators", "daily_report"],
   assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"],
   assignedStage: "ابتدائي"
 }, {
@@ -112,6 +150,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. نجلاء الحربي",
   password: "subj@1111",
   icon: "📝",
+  tabs: ["questions"],
   assignedSubjects: ["اللغة العربية"]
 }, {
   id: "subj2",
@@ -119,6 +158,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. محمد الدوسري",
   password: "subj@2222",
   icon: "📝",
+  tabs: ["questions"],
   assignedSubjects: ["الرياضيات"]
 }, {
   id: "teach1",
@@ -126,6 +166,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. سلمى الزهراني",
   password: "teach@1111",
   icon: "👨‍🏫",
+  tabs: ["curriculum", "questions"],
   assignedSubjects: ["العلوم"],
   assignedStage: "ابتدائي"
 }, {
@@ -134,6 +175,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. عمر المالكي",
   password: "inv@1111",
   icon: "🧑‍🎓",
+  tabs: ["attendance"],
   assignedGrades: ["1/أ"],
   assignedStage: "ابتدائي"
 }, {
@@ -142,6 +184,7 @@ const DEFAULT_ACCOUNTS = [{
   name: "أ. رنا السهلي",
   password: "inv@2222",
   icon: "🧑‍🎓",
+  tabs: ["attendance"],
   assignedGrades: ["1/ب"],
   assignedStage: "ابتدائي"
 }];
@@ -150,6 +193,11 @@ const DEFAULT_SCHOOL = {
   sub: "الفصل الدراسي الأول 1446هـ",
   logo: null
 };
+function canAccTab(account, tabId) {
+  if (!account) return false;
+  if (account.tabs === "all") return true;
+  return (account.tabs || []).includes(tabId);
+}
 
 // ══════════════════════════════════════════
 // FIREBASE HELPERS
@@ -678,7 +726,8 @@ function AccountsManager({
     password: "",
     assignedStage: "ابتدائي",
     assignedGrades: [],
-    assignedSubjects: []
+    assignedSubjects: [],
+    tabs: []
   });
   const stgC = {
     "ابتدائي": "#1D9E75",
@@ -853,6 +902,41 @@ function AccountsManager({
         cursor: "pointer"
       }
     }, s);
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#6b7280",
+      marginBottom: 5
+    }
+  }, "\u0627\u0644\u062A\u0628\u0648\u064A\u0628\u0627\u062A \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 5,
+      flexWrap: "wrap"
+    }
+  }, ALL_TABS_LIST.map(t => {
+    const tabs = data.tabs || [];
+    const sel = tabs === "all" || tabs.includes(t.id);
+    return /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => {
+        const cur = data.tabs === "all" ? ALL_TABS_LIST.map(x => x.id) : data.tabs || [];
+        const next = sel ? cur.filter(x => x !== t.id) : [...cur, t.id];
+        setData(p => ({
+          ...p,
+          tabs: next
+        }));
+      },
+      style: {
+        padding: "3px 10px",
+        borderRadius: 20,
+        border: `0.5px solid ${sel ? "#378ADD" : "#d1d5db"}`,
+        background: sel ? "#378ADD" : "#fff",
+        color: sel ? "#fff" : "#374151",
+        fontSize: 11,
+        cursor: "pointer"
+      }
+    }, t.label);
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -1075,12 +1159,7 @@ function App() {
   useEffect(() => {
     window._currentUser = user;
     window._logout = () => setUser(null);
-    window._canTab = tabId => {
-      if (!user) return false;
-      const tabs = ROLE_TABS[user.role];
-      if (tabs === "all") return true;
-      return (tabs || []).includes(tabId);
-    };
+    window._canTab = tabId => canAccTab(user, tabId);
   }, [user]);
   const saveAccounts = async list => {
     setAccounts(list);
@@ -2139,7 +2218,11 @@ function AppMain({
         borderRadius: 5,
         display: "inline-block"
       }
-    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("table", {
+    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st), /*#__PURE__*/React.createElement("div", {
+      style: {
+        overflowX: "auto"
+      }
+    }, /*#__PURE__*/React.createElement("table", {
       style: {
         borderCollapse: "collapse",
         width: "100%"
