@@ -3467,8 +3467,8 @@ function AppMain({
     total: (subjects[st] || []).length,
     approved: (subjects[st] || []).filter(s => ["معتمدة","مطبوعة"].includes(s.questionStatus)).length,
     rooms: Object.values(committees[st]||{}).reduce((a,r)=>a+r.length,0),
-    presentInv: Object.values(committees[st]||{}).flatMap(g=>g).filter(r=>r.inv1Present===true||r.inv2Present===true).length,
-    absentInv: Object.values(committees[st]||{}).flatMap(g=>g).filter(r=>r.inv1Present===false||r.inv2Present===false).length,
+    presentInv: Object.values(committees[st]||{}).flat().filter(r=>r.inv1Present===true||r.inv2Present===true).length,
+    absentInv: Object.values(committees[st]||{}).flat().filter(r=>r.inv1Present===false||r.inv2Present===false).length,
   }));
     const StageGradeBar = () => /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3912,9 +3912,9 @@ function AppMain({
                 /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700}}, "\u{1F4CA} \u0625\u0646\u062C\u0627\u0632 \u0634\u0639\u0628 \u0627\u0644\u0645\u0648\u0627\u062F"),
                 /*#__PURE__*/React.createElement("button", {
                   onClick: () => {
-                    const subs = [...new Set(Object.values(tpls).flat().flatMap(t=>t.exams.map(e=>e.subject)))];
+                    const subs = [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))];
                     const rows = subs.map(sub => {
-                      const all = []; STAGES.forEach(st => GRADES[st].forEach(g => { if(getGradeExams(tpls,st,g).some(e=>e.subject===sub)){const li=getLifeIdx(st+"-"+g+"-"+sub);all.push(li>=TARGET_IDX);} }));
+                      const all = []; STAGES.forEach(st => GRADES[st].forEach(g => { if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)){const li=getLifeIdx(st+"-"+g+"-"+sub);all.push(li>=TARGET_IDX);} }));
                       const done=all.filter(Boolean).length;
                       return sub+","+(Math.round(done/Math.max(all.length,1)*100))+"%,"+done+"/"+all.length;
                     });
@@ -3929,8 +3929,8 @@ function AppMain({
                   ["شعبة المادة","نسبة الإنجاز","الحالة"].map(h=>/*#__PURE__*/React.createElement("th",{key:h,style:{textAlign:"right",padding:"6px 8px",fontWeight:600,fontSize:11,color:"#6b7280",borderBottom:"0.5px solid #e5e7eb"}},h))
                 )),
                 /*#__PURE__*/React.createElement("tbody", null,
-                  [...new Set(Object.values(tpls).flat().flatMap(t=>t.exams.map(e=>e.subject)))].map(sub => {
-                    const all=[]; STAGES.forEach(st=>GRADES[st].forEach(g=>{if(getGradeExams(tpls,st,g).some(e=>e.subject===sub)){all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX);}}));
+                  [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))].map(sub => {
+                    const all=[]; STAGES.forEach(st=>GRADES[st].forEach(g=>{if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)){all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX);}}));
                     const done=all.filter(Boolean).length; const pct=Math.round(done/Math.max(all.length,1)*100);
                     const pc=pct===100?"#1D9E75":pct>=60?"#EF9F27":"#E24B4A";
                     return /*#__PURE__*/React.createElement("tr",{key:sub,style:{borderBottom:"0.5px solid #f3f4f6"}},
