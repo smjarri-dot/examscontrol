@@ -463,16 +463,53 @@ function SchoolSettings({
   const [name, setName] = useState(school.name || "");
   const [sub, setSub] = useState(school.sub || "");
   const [logo, setLogo] = useState(school.logo || null);
+  const [grades, setGrades] = useState(school.grades || {
+    "ابتدائي": ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
+    "متوسط": ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
+    "ثانوي": ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
+  });
+  const [activeStage, setActiveStage] = useState("ابتدائي");
+  const [newGrade, setNewGrade] = useState("");
   const fileRef = useRef();
+  const stgC = {
+    "ابتدائي": "#1D9E75",
+    "متوسط": "#378ADD",
+    "ثانوي": "#534AB7"
+  };
   const inp = {
-    padding: "9px 12px",
+    padding: "8px 10px",
     border: "1px solid #d1d5db",
     borderRadius: 8,
-    fontSize: 13,
+    fontSize: 12,
     width: "100%",
     fontFamily: "Tajawal,sans-serif",
     outline: "none",
     boxSizing: "border-box"
+  };
+  const stages = Object.keys(grades);
+  const addGrade = () => {
+    if (!newGrade.trim()) return;
+    const cur = grades[activeStage] || [];
+    if (cur.includes(newGrade.trim())) return;
+    setGrades({
+      ...grades,
+      [activeStage]: [...cur, newGrade.trim()]
+    });
+    setNewGrade("");
+  };
+  const removeGrade = (s, g) => setGrades({
+    ...grades,
+    [s]: (grades[s] || []).filter(x => x !== g)
+  });
+  const moveGrade = (s, i, dir) => {
+    const arr = [...(grades[s] || [])];
+    const n = i + dir;
+    if (n < 0 || n >= arr.length) return;
+    [arr[i], arr[n]] = [arr[n], arr[i]];
+    setGrades({
+      ...grades,
+      [s]: arr
+    });
   };
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -480,9 +517,11 @@ function SchoolSettings({
       inset: 0,
       background: "rgba(0,0,0,.5)",
       display: "flex",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "center",
       zIndex: 300,
+      overflowY: "auto",
+      padding: "20px 0",
       fontFamily: "Tajawal,sans-serif",
       direction: "rtl"
     }
@@ -490,22 +529,22 @@ function SchoolSettings({
     style: {
       background: "#fff",
       borderRadius: 14,
-      padding: "28px 24px",
-      width: 420,
-      maxWidth: "92vw"
+      padding: "24px",
+      width: 560,
+      maxWidth: "95vw",
+      margin: "auto"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 20
+      marginBottom: 18
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
-      fontWeight: 700,
-      color: "#1a2940"
+      fontWeight: 700
     }
   }, "\uD83C\uDFEB \u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u0629"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
@@ -517,56 +556,48 @@ function SchoolSettings({
     }
   }, "\xD7")), /*#__PURE__*/React.createElement("div", {
     style: {
-      textAlign: "center",
-      marginBottom: 20
+      display: "flex",
+      gap: 14,
+      alignItems: "flex-start",
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: "relative",
-      display: "inline-block"
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: () => fileRef.current?.click(),
+    style: {
+      width: 68,
+      height: 68,
+      borderRadius: "50%",
+      overflow: "hidden",
+      background: "#f3f4f6",
+      border: "3px dashed #d1d5db",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 26
     }
   }, logo ? /*#__PURE__*/React.createElement("img", {
     src: logo,
     style: {
-      width: 90,
-      height: 90,
-      borderRadius: "50%",
-      objectFit: "cover",
-      border: "3px solid #e5e7eb",
-      display: "block"
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
     }
-  }) : /*#__PURE__*/React.createElement("div", {
+  }) : "🏫"), logo && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setLogo(null),
     style: {
-      width: 90,
-      height: 90,
-      borderRadius: "50%",
-      background: "#f3f4f6",
-      border: "3px dashed #d1d5db",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 36,
-      margin: "0 auto"
-    }
-  }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => fileRef.current?.click(),
-    style: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      width: 28,
-      height: 28,
-      borderRadius: "50%",
-      background: "#1a2940",
-      border: "2px solid #fff",
-      color: "#fff",
-      fontSize: 13,
+      fontSize: 10,
+      color: "#E24B4A",
+      background: "none",
+      border: "none",
       cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
+      marginTop: 3
     }
-  }, "+")), /*#__PURE__*/React.createElement("input", {
+  }, "\u062D\u0630\u0641"), /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: "image/*",
@@ -580,31 +611,18 @@ function SchoolSettings({
       r.onload = ev => setLogo(ev.target.result);
       r.readAsDataURL(f);
     }
-  }), logo && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setLogo(null),
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: 6,
-      fontSize: 11,
-      color: "#E24B4A",
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      display: "block",
-      margin: "6px auto 0"
-    }
-  }, "\u062D\u0630\u0641 \u0627\u0644\u0634\u0639\u0627\u0631")), /*#__PURE__*/React.createElement("div", {
-    style: {
+      flex: 1,
       display: "flex",
       flexDirection: "column",
-      gap: 12,
-      marginBottom: 20
+      gap: 8
     }
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
-      color: "#374151",
-      marginBottom: 5
+      marginBottom: 3
     }
   }, "\u0627\u0633\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u0629"), /*#__PURE__*/React.createElement("input", {
     style: inp,
@@ -613,61 +631,188 @@ function SchoolSettings({
     placeholder: "\u0627\u0633\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u0629"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
-      color: "#374151",
-      marginBottom: 5
+      marginBottom: 3
     }
   }, "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      gap: 6,
-      marginBottom: 8
+      gap: 5,
+      marginBottom: 5
     }
-  }, ["الفصل الدراسي الأول 1446هـ", "الفصل الدراسي الثاني 1446هـ"].map(s => /*#__PURE__*/React.createElement("button", {
+  }, ["الفصل الأول", "الفصل الثاني", "الفصل الثالث"].map((s, i) => {
+    const full = s + " 1446هـ";
+    return /*#__PURE__*/React.createElement("button", {
+      key: s,
+      onClick: () => setSub(full),
+      style: {
+        flex: 1,
+        padding: "5px 3px",
+        borderRadius: 7,
+        border: `1px solid ${sub === full ? "#1a2940" : "#e5e7eb"}`,
+        background: sub === full ? "#1a2940" : "#fff",
+        color: sub === full ? "#fff" : "#374151",
+        fontSize: 10,
+        cursor: "pointer",
+        fontFamily: "Tajawal,sans-serif"
+      }
+    }, s);
+  }))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 10,
+      overflow: "hidden",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#f9fafb",
+      padding: "9px 14px",
+      fontSize: 12,
+      fontWeight: 700,
+      borderBottom: "0.5px solid #e5e7eb"
+    }
+  }, "\uD83C\uDFDB\uFE0F \u0627\u0644\u0641\u0635\u0648\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      borderBottom: "0.5px solid #e5e7eb"
+    }
+  }, stages.map(s => /*#__PURE__*/React.createElement("button", {
     key: s,
-    onClick: () => setSub(s),
+    onClick: () => setActiveStage(s),
     style: {
       flex: 1,
-      padding: "7px 4px",
-      borderRadius: 8,
-      border: `1px solid ${sub === s ? "#1a2940" : "#e5e7eb"}`,
-      background: sub === s ? "#1a2940" : "#fff",
-      color: sub === s ? "#fff" : "#374151",
+      padding: "8px",
+      border: "none",
+      borderBottom: `2px solid ${activeStage === s ? stgC[s] || "#1D9E75" : "transparent"}`,
+      background: "#fff",
+      color: activeStage === s ? stgC[s] || "#1D9E75" : "#6b7280",
       fontSize: 11,
       cursor: "pointer",
-      fontFamily: "Tajawal,sans-serif"
+      fontFamily: "Tajawal,sans-serif",
+      fontWeight: activeStage === s ? 700 : 400
     }
-  }, s.replace(" 1446هـ", "")))), /*#__PURE__*/React.createElement("input", {
-    style: inp,
-    value: sub,
-    onChange: e => setSub(e.target.value),
-    placeholder: "\u0623\u0648 \u0646\u0635 \u0645\u062E\u0635\u0635..."
-  }))), /*#__PURE__*/React.createElement("div", {
+  }, s, " (", (grades[s] || []).length, ")"))), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 5,
+      marginBottom: 10,
+      minHeight: 32
+    }
+  }, (grades[activeStage] || []).map((g, i) => /*#__PURE__*/React.createElement("div", {
+    key: g,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 2,
+      padding: "3px 8px",
+      background: (stgC[activeStage] || "#1D9E75") + "20",
+      borderRadius: 20,
+      border: `1px solid ${stgC[activeStage] || "#1D9E75"}40`
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveGrade(activeStage, i, -1),
+    style: {
+      border: "none",
+      background: "none",
+      cursor: "pointer",
+      color: "#6b7280",
+      fontSize: 10
+    }
+  }, "\u2191"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 600,
+      color: stgC[activeStage] || "#1D9E75"
+    }
+  }, g), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveGrade(activeStage, i, 1),
+    style: {
+      border: "none",
+      background: "none",
+      cursor: "pointer",
+      color: "#6b7280",
+      fontSize: 10
+    }
+  }, "\u2193"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => removeGrade(activeStage, g),
+    style: {
+      border: "none",
+      background: "none",
+      cursor: "pointer",
+      color: "#E24B4A",
+      fontSize: 13,
+      lineHeight: 1
+    }
+  }, "\xD7"))), !(grades[activeStage] || []).length && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#9ca3af"
+    }
+  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u0641\u0635\u0648\u0644 \u2014 \u0623\u0636\u0641 \u0645\u0646 \u0627\u0644\u062D\u0642\u0644 \u0623\u062F\u0646\u0627\u0647")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...inp,
+      flex: 1
+    },
+    value: newGrade,
+    onChange: e => setNewGrade(e.target.value),
+    onKeyDown: e => e.key === "Enter" && addGrade(),
+    placeholder: "\u0645\u062B\u0627\u0644: 1/\u062C"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: addGrade,
+    style: {
+      padding: "7px 14px",
+      borderRadius: 8,
+      border: "none",
+      background: stgC[activeStage] || "#1D9E75",
+      color: "#fff",
+      fontSize: 12,
+      cursor: "pointer",
+      fontFamily: "Tajawal,sans-serif",
+      whiteSpace: "nowrap"
+    }
+  }, "+ \u0625\u0636\u0627\u0641\u0629")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#9ca3af",
+      marginTop: 5
+    }
+  }, "\u26A0\uFE0F \u062A\u0639\u062F\u064A\u0644 \u0627\u0644\u0641\u0635\u0648\u0644 \u064A\u0624\u062B\u0631 \u0639\u0644\u0649 \u062C\u0645\u064A\u0639 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0646\u0635\u0629"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "10px 14px",
       background: "#1a2940",
       borderRadius: 10,
       display: "flex",
       alignItems: "center",
       gap: 10,
-      marginBottom: 20
+      marginBottom: 16
     }
   }, logo ? /*#__PURE__*/React.createElement("img", {
     src: logo,
     style: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: "50%",
       objectFit: "cover"
     }
   }) : /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 22
+      fontSize: 18
     }
   }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 700,
       color: "#fff"
     }
@@ -676,7 +821,7 @@ function SchoolSettings({
       fontSize: 10,
       color: "#94a3b8"
     }
-  }, sub || "الفصل الدراسي"))), /*#__PURE__*/React.createElement("div", {
+  }, sub))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -685,16 +830,17 @@ function SchoolSettings({
     onClick: () => onSave({
       name,
       sub,
-      logo
+      logo,
+      grades
     }),
     style: {
       flex: 1,
-      padding: "11px",
+      padding: "10px",
       border: "none",
       borderRadius: 10,
       background: "#1a2940",
       color: "#fff",
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 600,
       cursor: "pointer",
       fontFamily: "Tajawal,sans-serif"
@@ -702,20 +848,18 @@ function SchoolSettings({
   }, "\uD83D\uDCBE \u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
-      padding: "11px 18px",
+      padding: "10px 16px",
       border: "0.5px solid #d1d5db",
       borderRadius: 10,
       background: "#fff",
-      fontSize: 14,
+      fontSize: 13,
       cursor: "pointer",
       fontFamily: "Tajawal,sans-serif"
     }
   }, "\u0625\u0644\u063A\u0627\u0621"))));
 }
 
-// ══════════════════════════════════════════
-// ACCOUNTS MANAGER
-// ══════════════════════════════════════════
+
 function AccountsManager({
   accounts,
   onSave,
@@ -3148,6 +3292,8 @@ function AppMain({
   onShowSchool,
   onShowAccMgr
 }) {
+  if (school && school.grades) { Object.assign(GRADES, school.grades); }
+
   const [tab, setTab] = useState("dashboard");
   const [showStudentMgr, setShowStudentMgr] = useState(false);
   const [showRoomBuilder, setShowRoomBuilder] = useState(false);
