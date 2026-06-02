@@ -103,7 +103,217 @@ const PAPER_STEPS = [{
 }];
 const FINAL_IDX = PAPER_STEPS.length - 1;
 const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
+const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
+const TABS = [{
+  id: "dashboard",
+  icon: "⊞",
+  label: "الداش بورد"
+}, {
+  id: "schedules",
+  icon: "📅",
+  label: "جداول الاختبارات"
+}, {
+  id: "curriculum",
+  icon: "📚",
+  label: "اكتمال المنهج"
+}, {
+  id: "questions",
+  icon: "📝",
+  label: "الأسئلة والاعتماد"
+}, {
+  id: "committees",
+  icon: "👥",
+  label: "لجان الاختبار"
+}, {
+  id: "invigilators",
+  icon: "🕐",
+  label: "مشرف اللجان"
+}, {
+  id: "attendance",
+  icon: "✔️",
+  label: "حضور وأوراق الطلاب"
+}, {
+  id: "daily_report",
+  icon: "📊",
+  label: "التقرير اليومي"
+}, {
+  id: "lifecycle",
+  icon: "🔄",
+  label: "خط السير"
+}, {
+  id: "ranking",
+  icon: "🏆",
+  label: "جائزة الكنترول"
+}, {
+  id: "publish",
+  icon: "🌐",
+  label: "النشر"
+}];
 
+// ══ ACCOUNTS ══
+const ROLES_LIST = [{
+  id: "admin",
+  label: "مدير المدرسة",
+  icon: "🏫",
+  multi: false
+}, {
+  id: "supervisor",
+  label: "مشرف الاختبارات",
+  icon: "📋",
+  multi: false
+}, {
+  id: "comm_supervisor",
+  label: "مشرف لجان",
+  icon: "👥",
+  multi: true
+}, {
+  id: "subject_supervisor",
+  label: "مشرف مادة",
+  icon: "📝",
+  multi: true
+}, {
+  id: "teacher",
+  label: "معلم",
+  icon: "👨‍🏫",
+  multi: true
+}, {
+  id: "invigilator",
+  label: "مراقب",
+  icon: "🧑‍🎓",
+  multi: true
+}];
+const ALL_TABS_LIST = TABS.map(t => ({
+  id: t.id,
+  label: t.label
+}));
+const DEFAULT_ACCOUNTS = [{
+  id: "admin",
+  role: "admin",
+  name: "مدير المدرسة",
+  password: "admin@1446",
+  icon: "🏫",
+  tabs: "all"
+}, {
+  id: "sup1",
+  role: "supervisor",
+  name: "مشرف الاختبارات",
+  password: "exam@1446",
+  icon: "📋",
+  tabs: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"]
+}, {
+  id: "comm1",
+  role: "comm_supervisor",
+  name: "أ. خالد العمري",
+  password: "comm@1111",
+  icon: "👥",
+  tabs: ["invigilators", "daily_report"],
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"]
+}, {
+  id: "comm2",
+  role: "comm_supervisor",
+  name: "أ. فهد الشمري",
+  password: "comm@2222",
+  icon: "👥",
+  tabs: ["invigilators", "daily_report"],
+  assignedStage: "ابتدائي",
+  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"]
+}, {
+  id: "subj1",
+  role: "subject_supervisor",
+  name: "أ. نجلاء الحربي",
+  password: "subj@1111",
+  icon: "📝",
+  tabs: ["questions"],
+  assignedSubjects: ["اللغة العربية"]
+}, {
+  id: "subj2",
+  role: "subject_supervisor",
+  name: "أ. محمد الدوسري",
+  password: "subj@2222",
+  icon: "📝",
+  tabs: ["questions"],
+  assignedSubjects: ["الرياضيات"]
+}, {
+  id: "teach1",
+  role: "teacher",
+  name: "أ. سلمى الزهراني",
+  password: "teach@1111",
+  icon: "👨‍🏫",
+  tabs: ["curriculum", "questions"],
+  assignedSubjects: ["العلوم"],
+  assignedStage: "ابتدائي"
+}, {
+  id: "inv1",
+  role: "invigilator",
+  name: "أ. عمر المالكي",
+  password: "inv@1111",
+  icon: "🧑‍🎓",
+  tabs: ["attendance"],
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/أ"]
+}, {
+  id: "inv2",
+  role: "invigilator",
+  name: "أ. رنا السهلي",
+  password: "inv@2222",
+  icon: "🧑‍🎓",
+  tabs: ["attendance"],
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/ب"]
+}];
+const DEFAULT_SCHOOL = {
+  name: "نظام الاختبارات النهائية",
+  sub: "الفصل الدراسي الأول 1446هـ",
+  logo: null
+};
+
+// ══ HELPERS ══
+function canAccTab(account, tabId) {
+  if (!account) return false;
+  if (account.role === "admin") return true;
+  if (account.tabs === "all") return true;
+  if (!account.tabs || account.tabs.length === 0) return false;
+  return account.tabs.includes(tabId);
+}
+
+function hijriToGregorian(h) {
+  try {
+    const [y,m,d] = h.split("/").map(Number);
+    if (!y||!m||!d) return "";
+    const months = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    return d+" "+months[((m+8)%12)]+" "+(2024+(y-1446));
+  } catch { return ""; }
+}
+function hijriToGregorian(h) {
+  try {
+    const [y, m, d] = h.split("/").map(Number);
+    if (!y || !m || !d) return "";
+    const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    return d + " " + months[(m + 8) % 12] + " " + (2024 + (y - 1446));
+  } catch {
+    return "";
+  }
+}
+
+// ══ FIREBASE ══
+async function fbGet(col, doc) {
+  try {
+    const s = await window._db.collection(col).doc(doc).get();
+    return s.exists ? s.data() : null;
+  } catch {
+    return null;
+  }
+}
+async function fbSet(col, doc, data) {
+  try {
+    await window._db.collection(col).doc(doc).set(data);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ══ INIT DATA ══
 const INV_POOL = ["أ. خالد العمري", "أ. فهد الشمري", "أ. نجلاء الحربي", "أ. محمد الدوسري", "أ. سلمى الزهراني", "أ. عمر المالكي", "أ. رنا السهلي", "أ. لانا العمري", "أ. ريم الشمري", "أ. عبدالله القحطاني", "أ. فيصل المطيري", "أ. هند الحربي"];
 const Q_STATUSES = ["لم تسلّم", "مسلّمة", "قيد المراجعة", "معتمدة", "مطبوعة"];
 const QSC = {
@@ -393,7 +603,6 @@ const getGradeExams = (tpls, stage, grade) => {
 };
 const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
 const initTpls = initScheduleTpls;
-
 function hijriToGregorian(h) {
   try {
     const [y, m, d] = h.split("/").map(Number);
@@ -5998,90 +6207,6 @@ function AppMain({
   }, "\u0625\u0644\u063A\u0627\u0621")))));
 }
 
-
-const DEFAULT_ACCOUNTS = [{
-  id: "admin",
-  role: "admin",
-  name: "مدير المدرسة",
-  password: "admin@1446",
-  icon: "🏫",
-  tabs: "all"
-}, {
-  id: "sup1",
-  role: "supervisor",
-  name: "مشرف الاختبارات",
-  password: "exam@1446",
-  icon: "📋",
-  tabs: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"]
-}, {
-  id: "comm1",
-  role: "comm_supervisor",
-  name: "أ. خالد العمري",
-  password: "comm@1111",
-  icon: "👥",
-  tabs: ["invigilators", "daily_report"],
-  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"],
-  assignedStage: "ابتدائي"
-}, {
-  id: "comm2",
-  role: "comm_supervisor",
-  name: "أ. فهد الشمري",
-  password: "comm@2222",
-  icon: "👥",
-  tabs: ["invigilators", "daily_report"],
-  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"],
-  assignedStage: "ابتدائي"
-}, {
-  id: "subj1",
-  role: "subject_supervisor",
-  name: "أ. نجلاء الحربي",
-  password: "subj@1111",
-  icon: "📝",
-  tabs: ["questions"],
-  assignedSubjects: ["اللغة العربية"]
-}, {
-  id: "subj2",
-  role: "subject_supervisor",
-  name: "أ. محمد الدوسري",
-  password: "subj@2222",
-  icon: "📝",
-  tabs: ["questions"],
-  assignedSubjects: ["الرياضيات"]
-}, {
-  id: "teach1",
-  role: "teacher",
-  name: "أ. سلمى الزهراني",
-  password: "teach@1111",
-  icon: "👨‍🏫",
-  tabs: ["curriculum", "questions"],
-  assignedSubjects: ["العلوم"],
-  assignedStage: "ابتدائي"
-}, {
-  id: "inv1",
-  role: "invigilator",
-  name: "أ. عمر المالكي",
-  password: "inv@1111",
-  icon: "🧑‍🎓",
-  tabs: ["attendance"],
-  assignedGrades: ["1/أ"],
-  assignedStage: "ابتدائي"
-}, {
-  id: "inv2",
-  role: "invigilator",
-  name: "أ. رنا السهلي",
-  password: "inv@2222",
-  icon: "🧑‍🎓",
-  tabs: ["attendance"],
-  assignedGrades: ["1/ب"],
-  assignedStage: "ابتدائي"
-}];
-const DEFAULT_SCHOOL = {
-  name: "نظام الاختبارات النهائية",
-  sub: "الفصل الدراسي الأول 1446هـ",
-  logo: null
-};
-
-
 function App() {
   const [ready, setReady] = useState(false);
   const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS);
@@ -6204,7 +6329,6 @@ function App() {
 // ══════════════════════════════════════════
 // STUDENT MANAGER (updated - no num, has section)
 // ══════════════════════════════════════════
-
 const _root = ReactDOM.createRoot(document.getElementById("root"));
 _root.render(React.createElement(App, null));
 
