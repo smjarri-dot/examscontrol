@@ -5999,6 +5999,89 @@ function AppMain({
 }
 
 
+const DEFAULT_ACCOUNTS = [{
+  id: "admin",
+  role: "admin",
+  name: "مدير المدرسة",
+  password: "admin@1446",
+  icon: "🏫",
+  tabs: "all"
+}, {
+  id: "sup1",
+  role: "supervisor",
+  name: "مشرف الاختبارات",
+  password: "exam@1446",
+  icon: "📋",
+  tabs: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"]
+}, {
+  id: "comm1",
+  role: "comm_supervisor",
+  name: "أ. خالد العمري",
+  password: "comm@1111",
+  icon: "👥",
+  tabs: ["invigilators", "daily_report"],
+  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"],
+  assignedStage: "ابتدائي"
+}, {
+  id: "comm2",
+  role: "comm_supervisor",
+  name: "أ. فهد الشمري",
+  password: "comm@2222",
+  icon: "👥",
+  tabs: ["invigilators", "daily_report"],
+  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"],
+  assignedStage: "ابتدائي"
+}, {
+  id: "subj1",
+  role: "subject_supervisor",
+  name: "أ. نجلاء الحربي",
+  password: "subj@1111",
+  icon: "📝",
+  tabs: ["questions"],
+  assignedSubjects: ["اللغة العربية"]
+}, {
+  id: "subj2",
+  role: "subject_supervisor",
+  name: "أ. محمد الدوسري",
+  password: "subj@2222",
+  icon: "📝",
+  tabs: ["questions"],
+  assignedSubjects: ["الرياضيات"]
+}, {
+  id: "teach1",
+  role: "teacher",
+  name: "أ. سلمى الزهراني",
+  password: "teach@1111",
+  icon: "👨‍🏫",
+  tabs: ["curriculum", "questions"],
+  assignedSubjects: ["العلوم"],
+  assignedStage: "ابتدائي"
+}, {
+  id: "inv1",
+  role: "invigilator",
+  name: "أ. عمر المالكي",
+  password: "inv@1111",
+  icon: "🧑‍🎓",
+  tabs: ["attendance"],
+  assignedGrades: ["1/أ"],
+  assignedStage: "ابتدائي"
+}, {
+  id: "inv2",
+  role: "invigilator",
+  name: "أ. رنا السهلي",
+  password: "inv@2222",
+  icon: "🧑‍🎓",
+  tabs: ["attendance"],
+  assignedGrades: ["1/ب"],
+  assignedStage: "ابتدائي"
+}];
+const DEFAULT_SCHOOL = {
+  name: "نظام الاختبارات النهائية",
+  sub: "الفصل الدراسي الأول 1446هـ",
+  logo: null
+};
+
+
 function App() {
   const [ready, setReady] = useState(false);
   const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS);
