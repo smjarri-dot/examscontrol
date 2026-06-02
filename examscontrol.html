@@ -32,6 +32,17 @@
     window._db = firebase.firestore();
   </script>
   <script>
+window.onerror = function(msg, src, line, col, err) {
+  document.getElementById("root").innerHTML = 
+    '<div style="padding:30px;font-family:monospace;direction:ltr;background:#fee;border:2px solid red;margin:20px;border-radius:8px">' +
+    '<h2 style="color:red">JS Error</h2>' +
+    '<p><b>Message:</b> ' + msg + '</p>' +
+    '<p><b>Line:</b> ' + line + '</p>' +
+    '<p><b>Error:</b> ' + (err ? err.stack : '') + '</p>' +
+    '</div>';
+  return false;
+};
+
 // ═══════════════════════════════════════════
 // EXAM CONTROL SYSTEM - FULL SOURCE
 // ═══════════════════════════════════════════
