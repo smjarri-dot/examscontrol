@@ -32,17 +32,6 @@
     window._db = firebase.firestore();
   </script>
   <script>
-window.onerror = function(msg, src, line, col, err) {
-  document.getElementById("root").innerHTML = 
-    '<div style="padding:30px;font-family:monospace;direction:ltr;background:#fee;border:2px solid red;margin:20px;border-radius:8px">' +
-    '<h2 style="color:red">JS Error</h2>' +
-    '<p><b>Message:</b> ' + msg + '</p>' +
-    '<p><b>Line:</b> ' + line + '</p>' +
-    '<p><b>Error:</b> ' + (err ? err.stack : '') + '</p>' +
-    '</div>';
-  return false;
-};
-
 // ═══════════════════════════════════════════
 // EXAM CONTROL SYSTEM - FULL SOURCE
 // ═══════════════════════════════════════════
@@ -114,179 +103,297 @@ const PAPER_STEPS = [{
 }];
 const FINAL_IDX = PAPER_STEPS.length - 1;
 const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
-const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
-const TABS = [{
-  id: "dashboard",
-  icon: "⊞",
-  label: "الداش بورد"
-}, {
-  id: "schedules",
-  icon: "📅",
-  label: "جداول الاختبارات"
-}, {
-  id: "curriculum",
-  icon: "📚",
-  label: "اكتمال المنهج"
-}, {
-  id: "questions",
-  icon: "📝",
-  label: "الأسئلة والاعتماد"
-}, {
-  id: "committees",
-  icon: "👥",
-  label: "لجان الاختبار"
-}, {
-  id: "invigilators",
-  icon: "🕐",
-  label: "مشرف اللجان"
-}, {
-  id: "attendance",
-  icon: "✔️",
-  label: "حضور وأوراق الطلاب"
-}, {
-  id: "daily_report",
-  icon: "📊",
-  label: "التقرير اليومي"
-}, {
-  id: "lifecycle",
-  icon: "🔄",
-  label: "خط السير"
-}, {
-  id: "ranking",
-  icon: "🏆",
-  label: "جائزة الكنترول"
-}, {
-  id: "publish",
-  icon: "🌐",
-  label: "النشر"
-}];
 
-// ══ ACCOUNTS ══
-const ROLES_LIST = [{
-  id: "admin",
-  label: "مدير المدرسة",
-  icon: "🏫",
-  multi: false
-}, {
-  id: "supervisor",
-  label: "مشرف الاختبارات",
-  icon: "📋",
-  multi: false
-}, {
-  id: "comm_supervisor",
-  label: "مشرف لجان",
-  icon: "👥",
-  multi: true
-}, {
-  id: "subject_supervisor",
-  label: "مشرف مادة",
-  icon: "📝",
-  multi: true
-}, {
-  id: "teacher",
-  label: "معلم",
-  icon: "👨‍🏫",
-  multi: true
-}, {
-  id: "invigilator",
-  label: "مراقب",
-  icon: "🧑‍🎓",
-  multi: true
-}];
-const ALL_TABS_LIST = TABS.map(t => ({
-  id: t.id,
-  label: t.label
-}));
-const DEFAULT_ACCOUNTS = [{
-  id: "admin",
-  role: "admin",
-  name: "مدير المدرسة",
-  password: "admin@1446",
-  icon: "🏫",
-  tabs: "all"
-}, {
-  id: "sup1",
-  role: "supervisor",
-  name: "مشرف الاختبارات",
-  password: "exam@1446",
-  icon: "📋",
-  tabs: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"]
-}, {
-  id: "comm1",
-  role: "comm_supervisor",
-  name: "أ. خالد العمري",
-  password: "comm@1111",
-  icon: "👥",
-  tabs: ["invigilators", "daily_report"],
-  assignedStage: "ابتدائي",
-  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"]
-}, {
-  id: "comm2",
-  role: "comm_supervisor",
-  name: "أ. فهد الشمري",
-  password: "comm@2222",
-  icon: "👥",
-  tabs: ["invigilators", "daily_report"],
-  assignedStage: "ابتدائي",
-  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"]
-}, {
-  id: "subj1",
-  role: "subject_supervisor",
-  name: "أ. نجلاء الحربي",
-  password: "subj@1111",
-  icon: "📝",
-  tabs: ["questions"],
-  assignedSubjects: ["اللغة العربية"]
-}, {
-  id: "subj2",
-  role: "subject_supervisor",
-  name: "أ. محمد الدوسري",
-  password: "subj@2222",
-  icon: "📝",
-  tabs: ["questions"],
-  assignedSubjects: ["الرياضيات"]
-}, {
-  id: "teach1",
-  role: "teacher",
-  name: "أ. سلمى الزهراني",
-  password: "teach@1111",
-  icon: "👨‍🏫",
-  tabs: ["curriculum", "questions"],
-  assignedSubjects: ["العلوم"],
-  assignedStage: "ابتدائي"
-}, {
-  id: "inv1",
-  role: "invigilator",
-  name: "أ. عمر المالكي",
-  password: "inv@1111",
-  icon: "🧑‍🎓",
-  tabs: ["attendance"],
-  assignedStage: "ابتدائي",
-  assignedGrades: ["1/أ"]
-}, {
-  id: "inv2",
-  role: "invigilator",
-  name: "أ. رنا السهلي",
-  password: "inv@2222",
-  icon: "🧑‍🎓",
-  tabs: ["attendance"],
-  assignedStage: "ابتدائي",
-  assignedGrades: ["1/ب"]
-}];
-const DEFAULT_SCHOOL = {
-  name: "نظام الاختبارات النهائية",
-  sub: "الفصل الدراسي الأول 1446هـ",
-  logo: null
+const INV_POOL = ["أ. خالد العمري", "أ. فهد الشمري", "أ. نجلاء الحربي", "أ. محمد الدوسري", "أ. سلمى الزهراني", "أ. عمر المالكي", "أ. رنا السهلي", "أ. لانا العمري", "أ. ريم الشمري", "أ. عبدالله القحطاني", "أ. فيصل المطيري", "أ. هند الحربي"];
+const Q_STATUSES = ["لم تسلّم", "مسلّمة", "قيد المراجعة", "معتمدة", "مطبوعة"];
+const QSC = {
+  "لم تسلّم": "#E24B4A",
+  "مسلّمة": "#EF9F27",
+  "قيد المراجعة": "#378ADD",
+  "معتمدة": "#1D9E75",
+  "مطبوعة": "#534AB7"
 };
+const QSB = {
+  "لم تسلّم": "#FCEBEB",
+  "مسلّمة": "#FEF3E2",
+  "قيد المراجعة": "#E6F1FB",
+  "معتمدة": "#E4F5EE",
+  "مطبوعة": "#EEEDFE"
+};
+const MEDALS = ["🥇", "🥈", "🥉"];
+const RATING_OPTIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
+const RATING_COLOR = {
+  "ممتاز": "#1D9E75",
+  "جيد جداً": "#378ADD",
+  "جيد": "#534AB7",
+  "مقبول": "#EF9F27",
+  "ضعيف": "#E24B4A"
+};
+const stC = {
+  ابتدائي: "#1D9E75",
+  متوسط: "#378ADD",
+  ثانوي: "#534AB7"
+};
+const stB = {
+  ابتدائي: "#E4F5EE",
+  متوسط: "#E6F1FB",
+  ثانوي: "#EEEDFE"
+};
+const initSubjects = () => {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = SUBJECTS_BY_STAGE[st].map((name, i) => ({
+      id: i + 1,
+      name,
+      teacher: INV_POOL[i % INV_POOL.length],
+      supervisor: INV_POOL[(i + 3) % INV_POOL.length],
+      curriculumDone: [100, 95, 88, 100, 72, 100, 60, 85][i % 8],
+      questionStatus: ["معتمدة", "قيد المراجعة", "مسلّمة", "معتمدة", "لم تسلّم", "مطبوعة", "لم تسلّم", "معتمدة"][i % 8],
+      submitted: [true, true, true, true, false, true, false, true][i % 8]
+    }));
+  });
+  return r;
+};
+const initScheduleTpls = () => ({
+  ابتدائي: [{
+    id: "tpl-ab-1",
+    name: "جدول الصفوف 1-4",
+    appliedTo: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الاجتماعيات",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }]
+  }, {
+    id: "tpl-ab-2",
+    name: "جدول الصفوف 5-6",
+    appliedTo: ["5/أ", "5/ب", "6/أ", "6/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الاجتماعيات",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e6",
+      subject: "القرآن الكريم",
+      date: "1446/12/26",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 60,
+      room: ""
+    }]
+  }],
+  متوسط: [{
+    id: "tpl-mid-1",
+    name: "جدول المرحلة المتوسطة",
+    appliedTo: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "العلوم",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "الفقه",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 60,
+      room: ""
+    }]
+  }],
+  ثانوي: [{
+    id: "tpl-sec-1",
+    name: "جدول المرحلة الثانوية",
+    appliedTo: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"],
+    exams: [{
+      id: "e1",
+      subject: "اللغة العربية",
+      date: "1446/12/15",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e2",
+      subject: "الرياضيات",
+      date: "1446/12/17",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 120,
+      room: ""
+    }, {
+      id: "e3",
+      subject: "الفيزياء",
+      date: "1446/12/19",
+      day: "الخميس",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e4",
+      subject: "الكيمياء",
+      date: "1446/12/22",
+      day: "الأحد",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }, {
+      id: "e5",
+      subject: "اللغة الإنجليزية",
+      date: "1446/12/24",
+      day: "الثلاثاء",
+      time: "8:00 ص",
+      duration: 90,
+      room: ""
+    }]
+  }]
+});
+const initStudents = () => {
+  const names = ["محمد القحطاني", "أحمد الزهراني", "سلمى العتيبي", "عبدالله الدوسري", "نورة السهلي", "فيصل المطيري", "ريم الخالدي", "لانا العمري"];
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = names.slice(0, 6).map((name, i) => ({
+        id: i + 1,
+        name,
+        num: `${2024 + i}`,
+        grade: g,
+        attendance: {},
+        paperReceived: {},
+        paperSubmitted: {},
+        paperSolved: {}
+      }));
+    });
+  });
+  return r;
+};
+const initCommittees = () => {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = [{
+        room: "",
+        inv1: INV_POOL[0],
+        inv2: INV_POOL[1],
+        inv1Present: null,
+        inv2Present: null,
+        inv1Note: "",
+        inv2Note: "",
+        inv1Time: "",
+        inv2Time: ""
+      }];
+    });
+  });
+  return r;
+};
+const getGradeExams = (tpls, stage, grade) => {
+  const tpl = (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
+  return tpl ? tpl.exams : [];
+};
+const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
+const initTpls = initScheduleTpls;
 
-// ══ HELPERS ══
-function canAccTab(account, tabId) {
-  if (!account) return false;
-  if (account.role === "admin") return true;
-  if (account.tabs === "all") return true;
-  if (!account.tabs || account.tabs.length === 0) return false;
-  return account.tabs.includes(tabId);
-}
 function hijriToGregorian(h) {
   try {
     const [y, m, d] = h.split("/").map(Number);
@@ -316,48 +423,6 @@ async function fbSet(col, doc, data) {
 }
 
 // ══ INIT DATA ══
-function initTpls() {
-  return {
-    ابتدائي: [],
-    متوسط: [],
-    ثانوي: []
-  };
-}
-function initStudents() {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = [];
-    });
-  });
-  return r;
-}
-function initCommittees() {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = [];
-    });
-  });
-  return r;
-}
-function initSubjects() {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = (SUBJECTS_BY_STAGE[st] || []).map((name, i) => ({
-      id: st + "-" + i,
-      name,
-      stage: st,
-      teacher: "",
-      supervisor: "",
-      curriculumDone: 0,
-      questionStatus: "لم تُعتمد"
-    }));
-  });
-  return r;
-}
 
 // ═══════════════════════════════════════════
 // LOGIN SCREEN
