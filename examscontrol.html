@@ -32,21 +32,125 @@
     window._db = firebase.firestore();
   </script>
   <script>
-// ══════════════════════════════════════════
-// CONSTANTS
-// ══════════════════════════════════════════
-const useState = React.useState;
-const useEffect = React.useEffect;
-const useRef = React.useRef;
-const useCallback = React.useCallback;
-const ROLE_TABS = {
-  admin: "all",
-  supervisor: ["dashboard", "schedules", "curriculum", "committees", "lifecycle", "ranking", "publish"],
-  comm_supervisor: ["invigilators", "daily_report"],
-  subject_supervisor: ["questions"],
-  teacher: ["curriculum", "questions"],
-  invigilator: ["attendance"]
+// ═══════════════════════════════════════════
+// EXAM CONTROL SYSTEM - FULL SOURCE
+// ═══════════════════════════════════════════
+
+const {
+  useState,
+  useEffect,
+  useRef,
+  useCallback
+} = React;
+
+// ══ CONSTANTS ══
+const STAGES = ["ابتدائي", "متوسط", "ثانوي"];
+const GRADES = {
+  ابتدائي: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
+  متوسط: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
+  ثانوي: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
 };
+const SUBJECTS_BY_STAGE = {
+  ابتدائي: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "التربية البدنية"],
+  متوسط: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "الفقه"],
+  ثانوي: ["التوحيد", "اللغة العربية", "الرياضيات", "الفيزياء", "الكيمياء", "الأحياء", "اللغة الإنجليزية", "الحاسب"]
+};
+const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+const PAPER_STEPS = [{
+  id: "sealed",
+  label: "المظاريف مختومة",
+  icon: "🔒"
+}, {
+  id: "opened",
+  label: "فتح المظاريف",
+  icon: "✉️"
+}, {
+  id: "received",
+  label: "استلام الطلاب",
+  icon: "📋"
+}, {
+  id: "solving",
+  label: "الحل والمراقبة",
+  icon: "✍️"
+}, {
+  id: "submitted",
+  label: "تسليم الأوراق",
+  icon: "📤"
+}, {
+  id: "verified",
+  label: "التحقق من الأوراق",
+  icon: "🔍"
+}, {
+  id: "corrected",
+  label: "التصحيح",
+  icon: "✏️"
+}, {
+  id: "reviewed",
+  label: "مراجعة التصحيح",
+  icon: "👁️"
+}, {
+  id: "recorded",
+  label: "رصد الدرجات",
+  icon: "📊"
+}, {
+  id: "audited",
+  label: "التدقيق",
+  icon: "✅"
+}, {
+  id: "published",
+  label: "النشر",
+  icon: "🌐"
+}];
+const FINAL_IDX = PAPER_STEPS.length - 1;
+const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
+const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
+const TABS = [{
+  id: "dashboard",
+  icon: "⊞",
+  label: "الداش بورد"
+}, {
+  id: "schedules",
+  icon: "📅",
+  label: "جداول الاختبارات"
+}, {
+  id: "curriculum",
+  icon: "📚",
+  label: "اكتمال المنهج"
+}, {
+  id: "questions",
+  icon: "📝",
+  label: "الأسئلة والاعتماد"
+}, {
+  id: "committees",
+  icon: "👥",
+  label: "لجان الاختبار"
+}, {
+  id: "invigilators",
+  icon: "🕐",
+  label: "مشرف اللجان"
+}, {
+  id: "attendance",
+  icon: "✔️",
+  label: "حضور وأوراق الطلاب"
+}, {
+  id: "daily_report",
+  icon: "📊",
+  label: "التقرير اليومي"
+}, {
+  id: "lifecycle",
+  icon: "🔄",
+  label: "خط السير"
+}, {
+  id: "ranking",
+  icon: "🏆",
+  label: "جائزة الكنترول"
+}, {
+  id: "publish",
+  icon: "🌐",
+  label: "النشر"
+}];
+
+// ══ ACCOUNTS ══
 const ROLES_LIST = [{
   id: "admin",
   label: "مدير المدرسة",
@@ -78,40 +182,10 @@ const ROLES_LIST = [{
   icon: "🧑‍🎓",
   multi: true
 }];
-const ALL_TABS_LIST = [{
-  id: "dashboard",
-  label: "الداش بورد"
-}, {
-  id: "schedules",
-  label: "جداول الاختبارات"
-}, {
-  id: "curriculum",
-  label: "اكتمال المنهج"
-}, {
-  id: "questions",
-  label: "الأسئلة والاعتماد"
-}, {
-  id: "committees",
-  label: "لجان الاختبار"
-}, {
-  id: "invigilators",
-  label: "مشرف اللجان"
-}, {
-  id: "attendance",
-  label: "حضور وأوراق الطلاب"
-}, {
-  id: "daily_report",
-  label: "التقرير اليومي"
-}, {
-  id: "lifecycle",
-  label: "خط السير"
-}, {
-  id: "ranking",
-  label: "جائزة الكنترول"
-}, {
-  id: "publish",
-  label: "النشر"
-}];
+const ALL_TABS_LIST = TABS.map(t => ({
+  id: t.id,
+  label: t.label
+}));
 const DEFAULT_ACCOUNTS = [{
   id: "admin",
   role: "admin",
@@ -133,8 +207,8 @@ const DEFAULT_ACCOUNTS = [{
   password: "comm@1111",
   icon: "👥",
   tabs: ["invigilators", "daily_report"],
-  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"],
-  assignedStage: "ابتدائي"
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/أ", "1/ب", "2/أ", "2/ب"]
 }, {
   id: "comm2",
   role: "comm_supervisor",
@@ -142,8 +216,8 @@ const DEFAULT_ACCOUNTS = [{
   password: "comm@2222",
   icon: "👥",
   tabs: ["invigilators", "daily_report"],
-  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"],
-  assignedStage: "ابتدائي"
+  assignedStage: "ابتدائي",
+  assignedGrades: ["3/أ", "3/ب", "4/أ", "4/ب"]
 }, {
   id: "subj1",
   role: "subject_supervisor",
@@ -176,8 +250,8 @@ const DEFAULT_ACCOUNTS = [{
   password: "inv@1111",
   icon: "🧑‍🎓",
   tabs: ["attendance"],
-  assignedGrades: ["1/أ"],
-  assignedStage: "ابتدائي"
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/أ"]
 }, {
   id: "inv2",
   role: "invigilator",
@@ -185,30 +259,40 @@ const DEFAULT_ACCOUNTS = [{
   password: "inv@2222",
   icon: "🧑‍🎓",
   tabs: ["attendance"],
-  assignedGrades: ["1/ب"],
-  assignedStage: "ابتدائي"
+  assignedStage: "ابتدائي",
+  assignedGrades: ["1/ب"]
 }];
 const DEFAULT_SCHOOL = {
   name: "نظام الاختبارات النهائية",
   sub: "الفصل الدراسي الأول 1446هـ",
   logo: null
 };
+
+// ══ HELPERS ══
 function canAccTab(account, tabId) {
   if (!account) return false;
-  if (account.role === "admin") return true; // admin always sees all
+  if (account.role === "admin") return true;
   if (account.tabs === "all") return true;
-  if (!account.tabs || account.tabs.length === 0) return false; // no tabs = no access
+  if (!account.tabs || account.tabs.length === 0) return false;
   return account.tabs.includes(tabId);
 }
+function hijriToGregorian(h) {
+  try {
+    const [y, m, d] = h.split("/").map(Number);
+    if (!y || !m || !d) return "";
+    const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    return d + " " + months[(m + 8) % 12] + " " + (2024 + (y - 1446));
+  } catch {
+    return "";
+  }
+}
 
-// ══════════════════════════════════════════
-// FIREBASE HELPERS
-// ══════════════════════════════════════════
+// ══ FIREBASE ══
 async function fbGet(col, doc) {
   try {
     const s = await window._db.collection(col).doc(doc).get();
     return s.exists ? s.data() : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -220,9 +304,53 @@ async function fbSet(col, doc, data) {
   }
 }
 
-// ══════════════════════════════════════════
+// ══ INIT DATA ══
+function initTpls() {
+  return {
+    ابتدائي: [],
+    متوسط: [],
+    ثانوي: []
+  };
+}
+function initStudents() {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = [];
+    });
+  });
+  return r;
+}
+function initCommittees() {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = {};
+    GRADES[st].forEach(g => {
+      r[st][g] = [];
+    });
+  });
+  return r;
+}
+function initSubjects() {
+  const r = {};
+  STAGES.forEach(st => {
+    r[st] = (SUBJECTS_BY_STAGE[st] || []).map((name, i) => ({
+      id: st + "-" + i,
+      name,
+      stage: st,
+      teacher: "",
+      supervisor: "",
+      curriculumDone: 0,
+      questionStatus: "لم تُعتمد"
+    }));
+  });
+  return r;
+}
+
+// ═══════════════════════════════════════════
 // LOGIN SCREEN
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
 function LoginScreen({
   onLogin,
   accounts,
@@ -235,7 +363,7 @@ function LoginScreen({
   const [loading, setLoading] = useState(false);
   const [showP, setShowP] = useState(false);
   const roleObj = ROLES_LIST.find(r => r.id === role);
-  const people = accounts.filter(a => a.role === role);
+  const people = (accounts || []).filter(a => a.role === role);
   const needsPick = roleObj?.multi && people.length > 1;
   const ready = role && (!needsPick || person) && pass;
   const onRoleChange = r => {
@@ -243,7 +371,7 @@ function LoginScreen({
     setPerson("");
     setPass("");
     setError("");
-    const p = accounts.filter(a => a.role === r);
+    const p = (accounts || []).filter(a => a.role === r);
     if (p.length === 1) setPerson(p[0].id);
   };
   const doLogin = () => {
@@ -251,10 +379,8 @@ function LoginScreen({
     setLoading(true);
     setTimeout(() => {
       const tid = needsPick ? person : people[0]?.id;
-      const acc = accounts.find(a => a.id === tid && a.password === pass);
-      if (acc) {
-        onLogin(acc);
-      } else {
+      const acc = (accounts || []).find(a => a.id === tid && a.password === pass);
+      if (acc) onLogin(acc);else {
         setError("كلمة المرور غير صحيحة");
         setLoading(false);
       }
@@ -294,7 +420,7 @@ function LoginScreen({
       textAlign: "center",
       marginBottom: 28
     }
-  }, school.logo ? /*#__PURE__*/React.createElement("img", {
+  }, school?.logo ? /*#__PURE__*/React.createElement("img", {
     src: school.logo,
     style: {
       width: 72,
@@ -315,13 +441,13 @@ function LoginScreen({
       fontWeight: 700,
       color: "#1a2940"
     }
-  }, school.name), /*#__PURE__*/React.createElement("div", {
+  }, school?.name || "نظام الاختبارات"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#9ca3af",
       marginTop: 3
     }
-  }, school.sub)), /*#__PURE__*/React.createElement("div", {
+  }, school?.sub || "")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -374,16 +500,14 @@ function LoginScreen({
       padding: "8px 12px",
       background: "#f9fafb",
       borderRadius: 8,
-      fontSize: 12,
-      color: "#374151"
+      fontSize: 12
     }
   }, roleObj?.icon, " ", people[0].name), role && needsPick && person && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "8px 12px",
       background: "#f9fafb",
       borderRadius: 8,
-      fontSize: 12,
-      color: "#374151"
+      fontSize: 12
     }
   }, roleObj?.icon, " ", people.find(p => p.id === person)?.name), role && (!needsPick || person) && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -450,17 +574,17 @@ function LoginScreen({
   }, loading ? "جارٍ التحقق..." : "دخول ←"))));
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
 // SCHOOL SETTINGS
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
 function SchoolSettings({
   school,
   onSave,
   onClose
 }) {
-  const [name, setName] = useState(school.name || "");
-  const [sub, setSub] = useState(school.sub || "");
-  const [logo, setLogo] = useState(school.logo || null);
+  const [name, setName] = useState(school?.name || "");
+  const [sub, setSub] = useState(school?.sub || "");
+  const [logo, setLogo] = useState(school?.logo || null);
   const fileRef = useRef();
   const inp = {
     padding: "9px 12px",
@@ -502,8 +626,7 @@ function SchoolSettings({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
-      fontWeight: 700,
-      color: "#1a2940"
+      fontWeight: 700
     }
   }, "\uD83C\uDFEB \u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u0629"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
@@ -674,7 +797,7 @@ function SchoolSettings({
       fontSize: 10,
       color: "#94a3b8"
     }
-  }, sub || "الفصل الدراسي"))), /*#__PURE__*/React.createElement("div", {
+  }, sub))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -711,16 +834,16 @@ function SchoolSettings({
   }, "\u0625\u0644\u063A\u0627\u0621"))));
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
 // ACCOUNTS MANAGER
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
 function AccountsManager({
   accounts,
   onSave,
   onClose
 }) {
-  const [list, setList] = useState(accounts);
-  const [editItem, setEditItem] = useState(null);
+  const [list, setList] = useState(accounts || []);
+  const [editItem, setEdit] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [newAcc, setNewAcc] = useState({
     role: "invigilator",
@@ -731,10 +854,11 @@ function AccountsManager({
     assignedSubjects: [],
     tabs: []
   });
+  const [saved, setSaved] = useState(false);
   const stgC = {
-    "ابتدائي": "#1D9E75",
-    "متوسط": "#378ADD",
-    "ثانوي": "#534AB7"
+    ابتدائي: "#1D9E75",
+    متوسط: "#378ADD",
+    ثانوي: "#534AB7"
   };
   const inp = {
     padding: "7px 10px",
@@ -745,20 +869,18 @@ function AccountsManager({
     fontFamily: "Tajawal,sans-serif"
   };
   const ALL_G = {
-    ابتدائي: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
-    متوسط: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
-    ثانوي: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
+    ابتدائي: GRADES.ابتدائي,
+    متوسط: GRADES.متوسط,
+    ثانوي: GRADES.ثانوي
   };
-  const ALL_S = {
-    ابتدائي: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "التربية البدنية"],
-    متوسط: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "الفقه"],
-    ثانوي: ["التوحيد", "اللغة العربية", "الرياضيات", "الفيزياء", "الكيمياء", "الأحياء", "اللغة الإنجليزية", "الحاسب"]
-  };
+  const ALL_S = SUBJECTS_BY_STAGE;
   const needsG = r => ["comm_supervisor", "invigilator"].includes(r);
   const needsS = r => ["subject_supervisor", "teacher"].includes(r);
   const doSave = l => {
     setList(l);
     onSave(l);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
   const Form = ({
     data,
@@ -795,7 +917,8 @@ function AccountsManager({
       ...p,
       role: e.target.value,
       assignedGrades: [],
-      assignedSubjects: []
+      assignedSubjects: [],
+      tabs: []
     }))
   }, ROLES_LIST.filter(r => r.id !== "admin").map(r => /*#__PURE__*/React.createElement("option", {
     key: r.id,
@@ -842,7 +965,7 @@ function AccountsManager({
       assignedStage: e.target.value,
       assignedGrades: []
     }))
-  }, ["ابتدائي", "متوسط", "ثانوي"].map(s => /*#__PURE__*/React.createElement("option", {
+  }, STAGES.map(s => /*#__PURE__*/React.createElement("option", {
     key: s
   }, s))))), needsG(data.role) && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -910,15 +1033,14 @@ function AccountsManager({
       color: "#6b7280",
       marginBottom: 5
     }
-  }, "\u0627\u0644\u062A\u0628\u0648\u064A\u0628\u0627\u062A \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627"), /*#__PURE__*/React.createElement("div", {
+  }, "\u0627\u0644\u062A\u0628\u0648\u064A\u0628\u0627\u062A \u0627\u0644\u0645\u0633\u0645\u0648\u062D\u0629"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 5,
       flexWrap: "wrap"
     }
   }, ALL_TABS_LIST.map(t => {
-    const tabs = data.tabs || [];
-    const sel = tabs === "all" || tabs.includes(t.id);
+    const sel = (data.tabs || []).includes(t.id) || data.tabs === "all";
     return /*#__PURE__*/React.createElement("button", {
       key: t.id,
       onClick: () => {
@@ -987,7 +1109,7 @@ function AccountsManager({
       background: "#fff",
       borderRadius: 12,
       padding: 20,
-      width: 680,
+      width: 700,
       maxWidth: "96vw",
       margin: "auto"
     }
@@ -1012,7 +1134,16 @@ function AccountsManager({
       cursor: "pointer",
       fontSize: 20
     }
-  }, "\xD7")), /*#__PURE__*/React.createElement("div", {
+  }, "\xD7")), saved && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "8px 12px",
+      background: "#E4F5EE",
+      borderRadius: 8,
+      fontSize: 12,
+      color: "#1D9E75",
+      marginBottom: 12
+    }
+  }, "\uD83D\uDCBE \u062A\u0645 \u0627\u0644\u062D\u0641\u0638"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -1024,15 +1155,15 @@ function AccountsManager({
     return editItem?.id === acc.id ? /*#__PURE__*/React.createElement(Form, {
       key: acc.id,
       data: editItem,
-      setData: setEditItem,
+      setData: setEdit,
       onOk: () => {
         doSave(list.map(a => a.id === editItem.id ? {
           ...editItem,
           icon: ROLES_LIST.find(r => r.id === editItem.role)?.icon || "👤"
         } : a));
-        setEditItem(null);
+        setEdit(null);
       },
-      onCancel: () => setEditItem(null),
+      onCancel: () => setEdit(null),
       lbl: "\u062D\u0641\u0638"
     }) : /*#__PURE__*/React.createElement("div", {
       key: acc.id,
@@ -1068,11 +1199,10 @@ function AccountsManager({
         fontSize: 11,
         background: "#f3f4f6",
         padding: "2px 8px",
-        borderRadius: 6,
-        color: "#6b7280"
+        borderRadius: 6
       }
     }, acc.password), acc.id !== "admin" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
-      onClick: () => setEditItem({
+      onClick: () => setEdit({
         ...acc
       }),
       style: {
@@ -1113,7 +1243,8 @@ function AccountsManager({
         password: "",
         assignedStage: "ابتدائي",
         assignedGrades: [],
-        assignedSubjects: []
+        assignedSubjects: [],
+        tabs: []
       });
       setShowNew(false);
     },
@@ -1135,131 +1266,9 @@ function AccountsManager({
   }, "+ \u0625\u0636\u0627\u0641\u0629 \u062D\u0633\u0627\u0628 \u062C\u062F\u064A\u062F")));
 }
 
-// ══════════════════════════════════════════
-// ROOT APP (with Firebase + Auth)
-// ══════════════════════════════════════════
-function App() {
-  const [ready, setReady] = useState(false);
-  const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS);
-  const [school, setSchool] = useState(DEFAULT_SCHOOL);
-  const [user, setUser] = useState(null);
-  const [showSchool, setShowSchool] = useState(false);
-  const [showAccMgr, setShowAccMgr] = useState(false);
-
-  // Load from Firebase on start
-  useEffect(() => {
-    async function init() {
-      const [accData, schData] = await Promise.all([fbGet("system", "accounts"), fbGet("system", "school")]);
-      if (accData?.list) {
-        // Merge Firebase accounts with defaults to ensure tabs field always exists
-        const merged = accData.list.map(acc => {
-          if (acc.tabs !== undefined) return acc; // already has tabs
-          const def = DEFAULT_ACCOUNTS.find(d => d.id === acc.id);
-          return {
-            ...acc,
-            tabs: def?.tabs || []
-          }; // fallback to default tabs
-        });
-        setAccounts(merged);
-      }
-      if (schData?.name) setSchool(schData);
-      setReady(true);
-    }
-    init();
-  }, []);
-
-  // Set globals for AppMain
-  useEffect(() => {
-    window._currentUser = user;
-    window._logout = () => setUser(null);
-  }, [user]);
-  const saveAccounts = async list => {
-    setAccounts(list);
-    await fbSet("system", "accounts", {
-      list
-    });
-  };
-  const saveSchool = async s => {
-    setSchool(s);
-    await fbSet("system", "school", s);
-  };
-
-  // Loading screen
-  if (!ready) return /*#__PURE__*/React.createElement("div", {
-    style: {
-      minHeight: "100vh",
-      background: "#1a2940",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "Tajawal,sans-serif",
-      direction: "rtl"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: "center",
-      color: "#fff"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 40,
-      marginBottom: 16
-    }
-  }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 16,
-      fontWeight: 600,
-      marginBottom: 16
-    }
-  }, "\u062C\u0627\u0631\u064D \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0646\u0638\u0627\u0645..."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 40,
-      height: 40,
-      border: "4px solid rgba(255,255,255,.2)",
-      borderTopColor: "#fff",
-      borderRadius: "50%",
-      animation: "spin 1s linear infinite",
-      margin: "0 auto"
-    }
-  })));
-
-  // Login screen
-  if (!user) return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(LoginScreen, {
-    onLogin: setUser,
-    accounts: accounts,
-    school: school
-  }), showSchool && /*#__PURE__*/React.createElement(SchoolSettings, {
-    school: school,
-    onSave: async s => {
-      await saveSchool(s);
-      setShowSchool(false);
-    },
-    onClose: () => setShowSchool(false)
-  }));
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(AppMain, {
-    school: school,
-    user: user,
-    accounts: accounts,
-    onLogout: () => setUser(null),
-    onShowSchool: () => setShowSchool(true),
-    onShowAccMgr: () => setShowAccMgr(true)
-  }), showSchool && /*#__PURE__*/React.createElement(SchoolSettings, {
-    school: school,
-    onSave: async s => {
-      await saveSchool(s);
-      setShowSchool(false);
-    },
-    onClose: () => setShowSchool(false)
-  }), showAccMgr && /*#__PURE__*/React.createElement(AccountsManager, {
-    accounts: accounts,
-    onSave: saveAccounts,
-    onClose: () => setShowAccMgr(false)
-  }));
-}
-
-// ══════════════════════════════════════════
-// STUDENT MANAGER (updated - no num, has section)
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// STUDENT MANAGER
+// ═══════════════════════════════════════════
 function StudentManager({
   students,
   setStudents,
@@ -1278,7 +1287,6 @@ function StudentManager({
   const [pasteText, setPasteText] = useState("");
   const [newName, setNewName] = useState("");
   const [parseResult, setParseResult] = useState(null);
-  const curList = students[stage]?.[grade] || [];
   const inp = {
     padding: "8px 12px",
     border: "1px solid #d1d5db",
@@ -1288,6 +1296,7 @@ function StudentManager({
     fontFamily: "Tajawal,sans-serif",
     outline: "none"
   };
+  const curList = students[stage]?.[grade] || [];
   const addOne = () => {
     if (!newName.trim()) return;
     const list = students[stage]?.[grade] || [];
@@ -1310,15 +1319,10 @@ function StudentManager({
     setNewName("");
   };
   const parsePaste = () => {
-    const lines = pasteText.trim().split('\n').filter(l => l.trim());
-    const parsed = [];
-    lines.forEach(line => {
-      // Handle: "1  اسم الطالب" or "اسم الطالب" or tab-separated
-      const clean = line.trim().replace(/^\d+[\s\t\.]+/, '').trim(); // remove leading numbers
-      if (clean.length > 2) parsed.push({
-        name: clean
-      });
-    });
+    const lines = pasteText.trim().split("\n").filter(l => l.trim());
+    const parsed = lines.map(line => ({
+      name: line.trim().replace(/^\d+[\s\t.]+/, "")
+    })).filter(p => p.name.length > 2);
     setParseResult(parsed);
   };
   const confirmPaste = () => {
@@ -1346,39 +1350,20 @@ function StudentManager({
     setParseResult(null);
     setMode("list");
   };
-
-  // Export to CSV
   const exportCSV = () => {
-    const allStudents = [];
-    STAGES.forEach(st => {
-      GRADES[st].forEach(g => {
-        (students[st]?.[g] || []).forEach(s => {
-          allStudents.push(`${s.name},${g},${st}`);
-        });
-      });
-    });
-    const csv = "الاسم,الفصل,المرحلة\n" + allStudents.join('\n');
-    const blob = new Blob(['\uFEFF' + csv], {
-      type: 'text/csv;charset=utf-8'
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'طلاب.csv';
+    const rows = [];
+    STAGES.forEach(st => GRADES[st].forEach(g => {
+      (students[st]?.[g] || []).forEach(s => rows.push(`${s.name},${g},${st}`));
+    }));
+    const csv = "\uFEFFالاسم,الفصل,المرحلة\n" + rows.join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {
+      type: "text/csv"
+    }));
+    a.download = "طلاب.csv";
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(a.href);
   };
-  const deleteStudent = id => {
-    setStudents({
-      ...students,
-      [stage]: {
-        ...students[stage],
-        [grade]: (students[stage]?.[grade] || []).filter(s => s.id !== id)
-      }
-    });
-  };
-
-  // Total count
   const totalAll = STAGES.reduce((a, st) => a + GRADES[st].reduce((b, g) => b + (students[st]?.[g]?.length || 0), 0), 0);
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1421,7 +1406,7 @@ function StudentManager({
       color: "#9ca3af",
       marginTop: 2
     }
-  }, "\u0625\u062C\u0645\u0627\u0644\u064A: ", totalAll, " \u0637\u0627\u0644\u0628 \u0641\u064A \u0627\u0644\u0646\u0638\u0627\u0645")), /*#__PURE__*/React.createElement("div", {
+  }, "\u0625\u062C\u0645\u0627\u0644\u064A: ", totalAll, " \u0637\u0627\u0644\u0628")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -1437,7 +1422,7 @@ function StudentManager({
       fontSize: 12,
       cursor: "pointer"
     }
-  }, "\uD83D\uDCE4 \u062A\u0635\u062F\u064A\u0631 CSV"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCE4 \u062A\u0635\u062F\u064A\u0631"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
       border: "none",
@@ -1460,7 +1445,7 @@ function StudentManager({
       overflow: "hidden",
       border: "0.5px solid #e5e7eb"
     }
-  }, ["ابتدائي", "متوسط", "ثانوي"].map(s => /*#__PURE__*/React.createElement("button", {
+  }, STAGES.map(s => /*#__PURE__*/React.createElement("button", {
     key: s,
     onClick: () => {
       setStage(s);
@@ -1504,11 +1489,9 @@ function StudentManager({
       color: "#fff",
       borderRadius: 10,
       fontSize: 9,
-      padding: "1px 4px",
-      minWidth: 16,
-      textAlign: "center"
+      padding: "1px 4px"
     }
-  }, students[stage]?.[g]?.length))))), /*#__PURE__*/React.createElement("div", {
+  }, students[stage][g].length))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 0,
@@ -1517,7 +1500,7 @@ function StudentManager({
       border: "0.5px solid #e5e7eb",
       marginBottom: 14
     }
-  }, [["list", `📋 القائمة (${curList.length})`], ["paste", "📄 نسخ ولصق"], ["add", "➕ إضافة يدوية"]].map(([m, lbl]) => /*#__PURE__*/React.createElement("button", {
+  }, [["list", `📋 القائمة (${curList.length})`], ["paste", "📄 نسخ ولصق"], ["add", "➕ إضافة"]].map(([m, lbl]) => /*#__PURE__*/React.createElement("button", {
     key: m,
     onClick: () => setMode(m),
     style: {
@@ -1541,23 +1524,22 @@ function StudentManager({
       color: "#6b7280",
       marginBottom: 6
     }
-  }, "\u0627\u0644\u0635\u0642 \u0643\u0634\u0641 \u0627\u0644\u0637\u0644\u0627\u0628 \u0645\u0646 \u0646\u0638\u0627\u0645 \u0646\u0648\u0631 \u2014 \u0643\u0644 \u0637\u0627\u0644\u0628 \u0641\u064A \u0633\u0637\u0631\u060C \u0627\u0644\u0623\u0631\u0642\u0627\u0645 \u0641\u064A \u0627\u0644\u0628\u062F\u0627\u064A\u0629 \u0633\u062A\u064F\u062D\u0630\u0641 \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B"), /*#__PURE__*/React.createElement("textarea", {
+  }, "\u0627\u0644\u0635\u0642 \u0643\u0634\u0641 \u0627\u0644\u0637\u0644\u0627\u0628 \u0645\u0646 \u0646\u0638\u0627\u0645 \u0646\u0648\u0631"), /*#__PURE__*/React.createElement("textarea", {
     value: pasteText,
     onChange: e => setPasteText(e.target.value),
     style: {
       ...inp,
-      minHeight: 150,
+      minHeight: 140,
       resize: "vertical",
       fontFamily: "monospace",
       fontSize: 11
     },
-    placeholder: "1  محمد أحمد القحطاني\n2  أحمد علي الزهراني\n3  سلمى عبدالله العتيبي"
+    placeholder: "1  محمد أحمد القحطاني\n2  أحمد علي الزهراني"
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
-      marginTop: 8,
-      alignItems: "center"
+      marginTop: 8
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: parsePaste,
@@ -1571,12 +1553,7 @@ function StudentManager({
       cursor: "pointer",
       fontFamily: "Tajawal,sans-serif"
     }
-  }, "\uD83D\uDD0D \u0645\u0639\u0627\u064A\u0646\u0629"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 11,
-      color: "#9ca3af"
-    }
-  }, pasteText.trim().split('\n').filter(l => l.trim()).length, " \u0633\u0637\u0631"), parseResult && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDD0D \u0645\u0639\u0627\u064A\u0646\u0629"), parseResult && /*#__PURE__*/React.createElement("button", {
     onClick: () => setParseResult(null),
     style: {
       padding: "5px 10px",
@@ -1606,13 +1583,13 @@ function StudentManager({
     }
   }, grade)), /*#__PURE__*/React.createElement("div", {
     style: {
-      maxHeight: 150,
+      maxHeight: 120,
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
       gap: 3
     }
-  }, parseResult.slice(0, 15).map((s, i) => /*#__PURE__*/React.createElement("div", {
+  }, parseResult.slice(0, 10).map((s, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       fontSize: 11,
@@ -1621,13 +1598,13 @@ function StudentManager({
       borderRadius: 6,
       border: "0.5px solid #e5e7eb"
     }
-  }, i + 1, ". ", s.name)), parseResult.length > 15 && /*#__PURE__*/React.createElement("div", {
+  }, i + 1, ". ", s.name)), parseResult.length > 10 && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#9ca3af",
       textAlign: "center"
     }
-  }, "... \u0648 ", parseResult.length - 15, " \u0622\u062E\u0631\u064A\u0646")), /*#__PURE__*/React.createElement("button", {
+  }, "... \u0648 ", parseResult.length - 10, " \u0622\u062E\u0631\u064A\u0646")), /*#__PURE__*/React.createElement("button", {
     onClick: confirmPaste,
     style: {
       marginTop: 10,
@@ -1777,7 +1754,13 @@ function StudentManager({
       textAlign: "left"
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => deleteStudent(s.id),
+    onClick: () => setStudents({
+      ...students,
+      [stage]: {
+        ...students[stage],
+        [grade]: curList.filter(x => x.id !== s.id)
+      }
+    }),
     style: {
       padding: "2px 8px",
       borderRadius: 6,
@@ -1790,9 +1773,9 @@ function StudentManager({
   }, "\u062D\u0630\u0641"))))))))));
 }
 
-// ══════════════════════════════════════════
-// ROOM BUILDER (fixed - shows all grades)
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// ROOM BUILDER
+// ═══════════════════════════════════════════
 function RoomBuilder({
   students,
   committees,
@@ -1806,11 +1789,8 @@ function RoomBuilder({
     متوسط: "#378ADD",
     ثانوي: "#534AB7"
   };
-
-  // Get grade level number correctly (e.g. "4" from "4/أ", "1م" from "1م/أ")
-  const sameLevelSections = GRADES[stage];
-  const curLevel = grade.split('/')[0];
-  const allStudents = sameLevelSections.flatMap(g => (students[stage]?.[g] || []).map(s => ({
+  const allSections = GRADES[stage];
+  const allStudents = allSections.flatMap(g => (students[stage]?.[g] || []).map(s => ({
     ...s,
     section: g
   })));
@@ -1819,8 +1799,6 @@ function RoomBuilder({
   const [selStudents, setSelStudents] = useState(new Set());
   const [filterSec, setFilterSec] = useState("all");
   const [search, setSearch] = useState("");
-
-  // Assigned student IDs across all rooms
   const assignedIds = new Set(rooms.flatMap(r => r.studentIds || []));
   const filtered = allStudents.filter(s => {
     if (filterSec !== "all" && s.section !== filterSec) return false;
@@ -1870,13 +1848,7 @@ function RoomBuilder({
       inv1: "",
       inv2: "",
       studentIds: [],
-      assignments: {},
-      p1: null,
-      p2: null,
-      t1: "",
-      t2: "",
-      n1: "",
-      n2: ""
+      assignments: {}
     }];
     setCommittees({
       ...committees,
@@ -1931,13 +1903,13 @@ function RoomBuilder({
       fontSize: 15,
       fontWeight: 700
     }
-  }, "\uD83C\uDFDB\uFE0F \u062A\u0634\u0643\u064A\u0644 \u0642\u0627\u0639\u0627\u062A \u0627\u0644\u0644\u062C\u0627\u0646"), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83C\uDFDB\uFE0F \u062A\u0634\u0643\u064A\u0644 \u0642\u0627\u0639\u0627\u062A \u0627\u0644\u0644\u062C\u0627\u0646 \u2014 ", grade), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#9ca3af",
       marginTop: 2
     }
-  }, "\u0627\u0644\u0635\u0641 ", curLevel, " \u2014 ", sameLevelSections.join("، "), " \u2014 ", allStudents.length, " \u0637\u0627\u0644\u0628")), /*#__PURE__*/React.createElement("button", {
+  }, "\u062C\u0645\u064A\u0639 \u0641\u0635\u0648\u0644 ", stage, " \u2014 ", allStudents.length, " \u0637\u0627\u0644\u0628")), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
       border: "none",
@@ -1976,7 +1948,7 @@ function RoomBuilder({
       fontSize: 11,
       cursor: "pointer"
     }
-  }, "\u0627\u0644\u0643\u0644 (", allStudents.length, ")"), sameLevelSections.map(g => /*#__PURE__*/React.createElement("button", {
+  }, "\u0627\u0644\u0643\u0644 (", allStudents.length, ")"), allSections.map(g => /*#__PURE__*/React.createElement("button", {
     key: g,
     onClick: () => setFilterSec(g),
     style: {
@@ -2031,7 +2003,7 @@ function RoomBuilder({
     style: {
       border: "0.5px solid #e5e7eb",
       borderRadius: 8,
-      maxHeight: 340,
+      maxHeight: 320,
       overflowY: "auto"
     }
   }, filtered.length === 0 ? /*#__PURE__*/React.createElement("div", {
@@ -2127,7 +2099,7 @@ function RoomBuilder({
       display: "flex",
       flexDirection: "column",
       gap: 10,
-      maxHeight: 440,
+      maxHeight: 420,
       overflowY: "auto"
     }
   }, rooms.length === 0 ? /*#__PURE__*/React.createElement("div", {
@@ -2163,12 +2135,11 @@ function RoomBuilder({
         fontSize: 13,
         fontWeight: 600
       }
-    }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, /*#__PURE__*/React.createElement("span", {
+    }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, " ", /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 11,
         fontWeight: 400,
-        color: "#6b7280",
-        marginRight: 6
+        color: "#6b7280"
       }
     }, "(", roomStudents.length, " \u0637\u0627\u0644\u0628)")), selRoom === i && /*#__PURE__*/React.createElement("span", {
       style: {
@@ -2223,9 +2194,9 @@ function RoomBuilder({
   }))))));
 }
 
-// ══════════════════════════════════════════
-// DAILY ASSIGNMENT - إسناد المراقبين اليومي
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// DAILY ASSIGNMENT
+// ═══════════════════════════════════════════
 function DailyAssignment({
   committees,
   setCommittees,
@@ -2241,26 +2212,22 @@ function DailyAssignment({
     ثانوي: "#534AB7"
   };
   const rooms = committees[stage]?.[grade] || [];
-  const exams = (tpls[stage] || []).find(t => t.appliedTo.includes(grade))?.exams || [];
-  const invigilators = accounts.filter(a => a.role === "invigilator");
+  // Get exams from the schedule for this grade
+  const schedule = (tpls[stage] || []).find(t => t.appliedTo?.includes(grade));
+  const exams = schedule?.exams || [];
   const [selExam, setSelExam] = useState(exams[0]?.id || "");
-  const examKey = selExam;
-  const getAssignment = (roomIdx, pos) => {
-    return rooms[roomIdx]?.assignments?.[examKey]?.[pos] || "";
-  };
-  const setAssignment = (roomIdx, pos, value) => {
-    const updated = rooms.map((r, i) => {
-      if (i !== roomIdx) return r;
-      return {
-        ...r,
-        assignments: {
-          ...(r.assignments || {}),
-          [examKey]: {
-            ...(r.assignments?.[examKey] || {}),
-            [pos]: value
-          }
+  const invigilators = (accounts || []).filter(a => ["invigilator", "teacher", "comm_supervisor"].includes(a.role));
+  const getAsgn = (ri, pos) => rooms[ri]?.assignments?.[selExam]?.[pos] || "";
+  const setAsgn = (ri, pos, val) => {
+    const updated = rooms.map((r, i) => i !== ri ? r : {
+      ...r,
+      assignments: {
+        ...(r.assignments || {}),
+        [selExam]: {
+          ...(r.assignments?.[selExam] || {}),
+          [pos]: val
         }
-      };
+      }
     });
     setCommittees({
       ...committees,
@@ -2319,7 +2286,7 @@ function DailyAssignment({
       color: "#9ca3af",
       marginTop: 2
     }
-  }, "\u062D\u062F\u062F \u0627\u0644\u0645\u0627\u062F\u0629/\u0627\u0644\u064A\u0648\u0645 \u062B\u0645 \u0623\u0633\u0646\u062F \u0645\u0631\u0627\u0642\u0628\u0627\u064B \u0644\u0643\u0644 \u0642\u0627\u0639\u0629")), /*#__PURE__*/React.createElement("button", {
+  }, "\u062D\u062F\u062F \u0627\u0644\u0645\u0627\u062F\u0629 \u062B\u0645 \u0623\u0633\u0646\u062F \u0645\u0631\u0627\u0642\u0628\u0627\u064B \u0644\u0643\u0644 \u0642\u0627\u0639\u0629")), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
       border: "none",
@@ -2330,12 +2297,12 @@ function DailyAssignment({
     }
   }, "\xD7")), exams.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: 20,
+      padding: 24,
       textAlign: "center",
       color: "#9ca3af",
-      fontSize: 12
+      fontSize: 13
     }
-  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644 \u0645\u0631\u062A\u0628\u0637") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u062C\u062F\u0648\u0644 \u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0645\u0631\u062A\u0628\u0637 \u0628\u0647\u0630\u0627 \u0627\u0644\u0641\u0635\u0644 \u2014 \u0623\u0636\u0641 \u062C\u062F\u0648\u0644\u0627\u064B \u0623\u0648\u0644\u0627\u064B \u0645\u0646 \u062A\u0628\u0648\u064A\u0628 \u0627\u0644\u062C\u062F\u0627\u0648\u0644") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -2352,7 +2319,8 @@ function DailyAssignment({
       background: selExam === ex.id ? stgC[stage] : "#fff",
       color: selExam === ex.id ? "#fff" : "#374151",
       fontSize: 12,
-      cursor: "pointer"
+      cursor: "pointer",
+      textAlign: "right"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2363,13 +2331,20 @@ function DailyAssignment({
       fontSize: 10,
       opacity: .8
     }
-  }, ex.date)))), /*#__PURE__*/React.createElement("div", {
+  }, ex.date, " ", hijriToGregorian(ex.date) ? `(${hijriToGregorian(ex.date)})` : "")))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
       gap: 10
     }
-  }, rooms.map((room, i) => /*#__PURE__*/React.createElement("div", {
+  }, rooms.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 20,
+      textAlign: "center",
+      color: "#9ca3af",
+      fontSize: 12
+    }
+  }, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0642\u0627\u0639\u0627\u062A") : rooms.map((room, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       padding: 14,
@@ -2381,15 +2356,13 @@ function DailyAssignment({
     style: {
       fontSize: 13,
       fontWeight: 600,
-      marginBottom: 10,
-      color: "#1a2940"
+      marginBottom: 10
     }
-  }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, /*#__PURE__*/React.createElement("span", {
+  }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${i + 1}`, " ", /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
       fontWeight: 400,
-      color: "#6b7280",
-      marginRight: 8
+      color: "#6b7280"
     }
   }, "(", (room.studentIds || []).length, " \u0637\u0627\u0644\u0628)")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2397,114 +2370,72 @@ function DailyAssignment({
       gridTemplateColumns: "1fr 1fr",
       gap: 10
     }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, ["inv1", "inv2"].map((pos, pi) => /*#__PURE__*/React.createElement("div", {
+    key: pos
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#6b7280",
       marginBottom: 4
     }
-  }, "\u0627\u0644\u0645\u0631\u0627\u0642\u0628 \u0627\u0644\u0623\u0648\u0644"), /*#__PURE__*/React.createElement("select", {
+  }, "\u0627\u0644\u0645\u0631\u0627\u0642\u0628 ", pi + 1), /*#__PURE__*/React.createElement("select", {
     style: inp,
-    value: getAssignment(i, "inv1"),
-    onChange: e => setAssignment(i, "inv1", e.target.value)
+    value: getAsgn(i, pos),
+    onChange: e => setAsgn(i, pos, e.target.value)
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, "\u2014 \u0627\u062E\u062A\u0631 \u0645\u0631\u0627\u0642\u0628\u0627\u064B \u2014"), accounts.filter(a => ["invigilator", "teacher", "comm_supervisor"].includes(a.role)).map(a => /*#__PURE__*/React.createElement("option", {
+  }, "\u2014 \u0627\u062E\u062A\u0631 \u0645\u0631\u0627\u0642\u0628\u0627\u064B \u2014"), invigilators.map(a => /*#__PURE__*/React.createElement("option", {
     key: a.id,
     value: a.id
-  }, a.name)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, a.name))), getAsgn(i, pos) && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
-      color: "#6b7280",
-      marginBottom: 4
+      fontSize: 10,
+      color: "#1D9E75",
+      marginTop: 3
     }
-  }, "\u0627\u0644\u0645\u0631\u0627\u0642\u0628 \u0627\u0644\u062B\u0627\u0646\u064A"), /*#__PURE__*/React.createElement("select", {
-    style: inp,
-    value: getAssignment(i, "inv2"),
-    onChange: e => setAssignment(i, "inv2", e.target.value)
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "\u2014 \u0627\u062E\u062A\u0631 \u0645\u0631\u0627\u0642\u0628\u0627\u064B \u2014"), accounts.filter(a => ["invigilator", "teacher", "comm_supervisor"].includes(a.role)).map(a => /*#__PURE__*/React.createElement("option", {
-    key: a.id,
-    value: a.id
-  }, a.name))))))), rooms.length === 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: 20,
-      textAlign: "center",
-      color: "#9ca3af",
-      fontSize: 12
-    }
-  }, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0642\u0627\u0639\u0627\u062A \u2014 \u0623\u0636\u0641 \u0642\u0627\u0639\u0627\u062A \u0623\u0648\u0644\u0627\u064B \u0645\u0646 \"\u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A\"")))));
+  }, "\u2713 ", (accounts || []).find(a => a.id === getAsgn(i, pos))?.name))))))))));
 }
 
-// ══════════════════════════════════════════
-// INVIGILATOR VIEW - ما يرى المراقب
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// INVIGILATOR VIEW
+// ═══════════════════════════════════════════
 function InvigilatorView({
   user,
   students,
   committees,
   tpls,
-  stage,
-  setStage,
-  grade,
-  setGrade,
-  accounts
+  setStudents
 }) {
   const stgC = {
     ابتدائي: "#1D9E75",
     متوسط: "#378ADD",
     ثانوي: "#534AB7"
   };
-  const [selExamId, setSelExamId] = useState(null);
-
-  // Find all rooms where this user is assigned today
-  const myRooms = [];
+  // Find rooms assigned to this user across all stages/grades/exams
+  const myAssignments = [];
   STAGES.forEach(st => {
     GRADES[st].forEach(g => {
       const rooms = committees[st]?.[g] || [];
-      const exams = (tpls[st] || []).find(t => t.appliedTo.includes(g))?.exams || [];
+      const schedule = (tpls[st] || []).find(t => t.appliedTo?.includes(g));
+      const exams = schedule?.exams || [];
       rooms.forEach((room, ri) => {
         exams.forEach(ex => {
           const asgn = room.assignments?.[ex.id];
           if (asgn && (asgn.inv1 === user.id || asgn.inv2 === user.id)) {
-            myRooms.push({
+            myAssignments.push({
               st,
               g,
               room,
               ri,
-              ex,
-              roomIdx: ri
+              ex
             });
           }
         });
       });
     });
   });
-
-  // Group by exam
-  const examsWithRooms = {};
-  myRooms.forEach(({
-    st,
-    g,
-    room,
-    ri,
-    ex
-  }) => {
-    if (!examsWithRooms[ex.id]) examsWithRooms[ex.id] = {
-      ex,
-      rooms: []
-    };
-    examsWithRooms[ex.id].rooms.push({
-      st,
-      g,
-      room,
-      ri
-    });
-  });
-  const examsArr = Object.values(examsWithRooms);
-  const selExam = selExamId ? examsWithRooms[selExamId] : examsArr[0];
-  if (myRooms.length === 0) return /*#__PURE__*/React.createElement("div", {
+  const [selKey, setSelKey] = useState(myAssignments[0] ? `${myAssignments[0].st}-${myAssignments[0].g}-${myAssignments[0].ri}-${myAssignments[0].ex.id}` : "");
+  if (myAssignments.length === 0) return /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 40,
       textAlign: "center",
@@ -2517,6 +2448,73 @@ function InvigilatorView({
       marginBottom: 12
     }
   }, "\uD83D\uDCCB"), "\u0644\u0645 \u064A\u062A\u0645 \u0625\u0633\u0646\u0627\u062F \u0642\u0627\u0639\u0627\u062A \u0644\u0643 \u0628\u0639\u062F \u2014 \u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0645\u0634\u0631\u0641 \u0627\u0644\u0644\u062C\u0627\u0646");
+  const selAsgn = myAssignments.find(a => `${a.st}-${a.g}-${a.ri}-${a.ex.id}` === selKey) || myAssignments[0];
+  const allSts = selAsgn ? Object.values(students[selAsgn.st] || {}).flat() : [];
+  const roomStudents = selAsgn ? (selAsgn.room.studentIds || []).map(id => allSts.find(s => s.id === id)).filter(Boolean) : [];
+  const examKey = selAsgn?.ex.id;
+  const updateAtt = (id, key, val) => {
+    const st = selAsgn.st,
+      g = selAsgn.g;
+    setStudents(p => {
+      const n = {
+        ...p
+      };
+      n[st] = {
+        ...n[st]
+      };
+      n[st][g] = n[st][g].map(s => s.id === id ? {
+        ...s,
+        attendance: {
+          ...s.attendance,
+          [key]: val
+        }
+      } : s);
+      return n;
+    });
+  };
+  const updateRecv = (id, key, val) => {
+    const st = selAsgn.st,
+      g = selAsgn.g;
+    setStudents(p => {
+      const n = {
+        ...p
+      };
+      n[st] = {
+        ...n[st]
+      };
+      n[st][g] = n[st][g].map(s => s.id === id ? {
+        ...s,
+        paperReceived: {
+          ...s.paperReceived,
+          [key]: val
+        }
+      } : s);
+      return n;
+    });
+  };
+  const updateSub = (id, key, val) => {
+    const st = selAsgn.st,
+      g = selAsgn.g;
+    setStudents(p => {
+      const n = {
+        ...p
+      };
+      n[st] = {
+        ...n[st]
+      };
+      n[st][g] = n[st][g].map(s => s.id === id ? {
+        ...s,
+        paperSubmitted: {
+          ...s.paperSubmitted,
+          [key]: val
+        }
+      } : s);
+      return n;
+    });
+  };
+  const present = roomStudents.filter(s => (s.attendance?.[examKey] || "حاضر") === "حاضر").length;
+  const received = roomStudents.filter(s => s.paperReceived?.[examKey]).length;
+  const submitted = roomStudents.filter(s => s.paperSubmitted?.[examKey]).length;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -2528,624 +2526,198 @@ function InvigilatorView({
       fontSize: 14,
       fontWeight: 700
     }
-  }, "\uD83E\uDDD1\u200D\uD83C\uDF93 \u0642\u0627\u0639\u0627\u062A\u064A \u0627\u0644\u064A\u0648\u0645"), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83E\uDDD1\u200D\uD83C\uDF93 \u0642\u0627\u0639\u0627\u062A\u064A \u0627\u0644\u0645\u064F\u0633\u0646\u062F\u0629"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
       flexWrap: "wrap"
     }
-  }, examsArr.map(({
-    ex,
-    rooms: rs
-  }) => /*#__PURE__*/React.createElement("button", {
-    key: ex.id,
-    onClick: () => setSelExamId(ex.id),
+  }, myAssignments.map(a => {
+    const k = `${a.st}-${a.g}-${a.ri}-${a.ex.id}`;
+    return /*#__PURE__*/React.createElement("button", {
+      key: k,
+      onClick: () => setSelKey(k),
+      style: {
+        padding: "8px 14px",
+        borderRadius: 8,
+        border: `0.5px solid ${selKey === k ? "#1a2940" : "#d1d5db"}`,
+        background: selKey === k ? "#1a2940" : "#fff",
+        color: selKey === k ? "#fff" : "#374151",
+        fontSize: 12,
+        cursor: "pointer",
+        textAlign: "right"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 600
+      }
+    }, a.ex.subject), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        opacity: .7
+      }
+    }, a.ex.date, " \u2014 \u0627\u0644\u0642\u0627\u0639\u0629 ", a.room.room || `10${a.ri + 1}`));
+  })), selAsgn && /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "8px 14px",
-      borderRadius: 8,
-      border: `0.5px solid ${selExam?.ex.id === ex.id ? "#1a2940" : "#d1d5db"}`,
-      background: selExam?.ex.id === ex.id ? "#1a2940" : "#fff",
-      color: selExam?.ex.id === ex.id ? "#fff" : "#374151",
-      fontSize: 12,
-      cursor: "pointer"
+      background: "#fff",
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 12,
+      padding: 16,
+      borderRight: `4px solid ${stgC[selAsgn.st]}`
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontWeight: 600
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12
     }
-  }, ex.subject), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700
+    }
+  }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", selAsgn.room.room || `10${selAsgn.ri + 1}`, " \u2014 ", selAsgn.ex.subject), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#6b7280"
+    }
+  }, selAsgn.g, " \u2014 ", selAsgn.ex.date, " ", hijriToGregorian(selAsgn.ex.date) ? `(${hijriToGregorian(selAsgn.ex.date)})` : "")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3,1fr)",
+      gap: 8,
+      textAlign: "center"
+    }
+  }, [["حاضر", present, "#1D9E75"], ["استلم", received, "#378ADD"], ["سلّم", submitted, "#534AB7"]].map(([l, v, c]) => /*#__PURE__*/React.createElement("div", {
+    key: l,
+    style: {
+      padding: "6px 10px",
+      background: c + "15",
+      borderRadius: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color: c
+    }
+  }, v), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      opacity: .7
+      color: "#6b7280"
     }
-  }, ex.date, " \u2014 ", rs.length, " \u0642\u0627\u0639\u0629")))), selExam && selExam.rooms.map(({
-    st,
-    g,
-    room,
-    ri
-  }) => {
-    const allSts = Object.values(students[st] || {}).flat();
-    const roomStudents = (room.studentIds || []).map(id => allSts.find(s => s.id === id)).filter(Boolean);
-    const examKey = selExam.ex.id;
-    const present = roomStudents.filter(s => (s.attendance?.[examKey] || "حاضر") === "حاضر").length;
-    const received = roomStudents.filter(s => s.paperReceived?.[examKey]).length;
-    const submitted = roomStudents.filter(s => s.paperSubmitted?.[examKey]).length;
-    return /*#__PURE__*/React.createElement("div", {
-      key: `${st}-${g}-${ri}`,
+  }, l))))), roomStudents.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "#9ca3af",
+      textAlign: "center",
+      padding: 16,
+      fontSize: 12
+    }
+  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u0637\u0644\u0627\u0628 \u0641\u064A \u0627\u0644\u0642\u0627\u0639\u0629") : /*#__PURE__*/React.createElement("table", {
+    style: {
+      width: "100%",
+      borderCollapse: "collapse",
+      fontSize: 12
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    style: {
+      background: "#f9fafb"
+    }
+  }, ["#", "الطالب", "الفصل", "الحضور", "استلم الورقة", "سلّم الورقة"].map(h => /*#__PURE__*/React.createElement("th", {
+    key: h,
+    style: {
+      textAlign: "right",
+      padding: "7px 9px",
+      fontWeight: 600,
+      fontSize: 11,
+      color: "#6b7280",
+      borderBottom: "0.5px solid #e5e7eb"
+    }
+  }, h)))), /*#__PURE__*/React.createElement("tbody", null, roomStudents.map((s, idx) => {
+    const att = s.attendance?.[examKey] || "حاضر";
+    const recv = s.paperReceived?.[examKey] || false;
+    const sub2 = s.paperSubmitted?.[examKey] || false;
+    const attC = att === "حاضر" ? "#1D9E75" : att === "غائب" ? "#E24B4A" : "#EF9F27";
+    const attB = att === "حاضر" ? "#E4F5EE" : att === "غائب" ? "#FCEBEB" : "#FEF3E2";
+    const attNext = {
+      حاضر: "غائب",
+      غائب: "متأخر",
+      متأخر: "حاضر"
+    };
+    return /*#__PURE__*/React.createElement("tr", {
+      key: s.id,
       style: {
-        background: "#fff",
-        border: "0.5px solid #e5e7eb",
-        borderRadius: 12,
-        padding: 16,
-        borderRight: `4px solid ${stgC[st]}`
+        borderBottom: "0.5px solid #f3f4f6"
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("td", {
       style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 12
-      }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 14,
-        fontWeight: 700
-      }
-    }, "\u0627\u0644\u0642\u0627\u0639\u0629 ", room.room || `10${ri + 1}`), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "#6b7280"
-      }
-    }, "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 ", st, " \u2014 ", g, " \u2014 ", roomStudents.length, " \u0637\u0627\u0644\u0628")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "grid",
-        gridTemplateColumns: "repeat(3,1fr)",
-        gap: 8,
-        textAlign: "center"
-      }
-    }, [["حاضر", present, "#1D9E75"], ["استلم", received, "#378ADD"], ["سلّم", submitted, "#534AB7"]].map(([l, v, c]) => /*#__PURE__*/React.createElement("div", {
-      key: l,
-      style: {
-        padding: "6px 10px",
-        background: c + "15",
-        borderRadius: 8
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 16,
-        fontWeight: 700,
-        color: c
-      }
-    }, v), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 10,
-        color: "#6b7280"
-      }
-    }, l))))), roomStudents.length === 0 ? /*#__PURE__*/React.createElement("div", {
-      style: {
-        color: "#9ca3af",
-        textAlign: "center",
-        padding: 16,
-        fontSize: 12
-      }
-    }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u0637\u0644\u0627\u0628 \u0641\u064A \u0627\u0644\u0642\u0627\u0639\u0629") : /*#__PURE__*/React.createElement("table", {
-      style: {
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: 12
-      }
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
-      style: {
-        background: "#f9fafb"
-      }
-    }, ["#", "الطالب", "الفصل", "الحضور", "استلم الورقة", "سلّم الورقة"].map(h => /*#__PURE__*/React.createElement("th", {
-      key: h,
-      style: {
-        textAlign: "right",
         padding: "7px 9px",
-        fontWeight: 600,
-        fontSize: 11,
-        color: "#6b7280",
-        borderBottom: "0.5px solid #e5e7eb"
+        color: "#9ca3af"
       }
-    }, h)))), /*#__PURE__*/React.createElement("tbody", null, roomStudents.map((s, idx) => {
-      const att = s.attendance?.[examKey] || "حاضر";
-      const recv = s.paperReceived?.[examKey] || false;
-      const sub2 = s.paperSubmitted?.[examKey] || false;
-      const attC = att === "حاضر" ? "#1D9E75" : att === "غائب" ? "#E24B4A" : "#EF9F27";
-      const attB = att === "حاضر" ? "#E4F5EE" : att === "غائب" ? "#FCEBEB" : "#FEF3E2";
-      return /*#__PURE__*/React.createElement("tr", {
-        key: s.id,
-        style: {
-          borderBottom: "0.5px solid #f3f4f6"
-        }
-      }, /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "7px 9px",
-          color: "#9ca3af"
-        }
-      }, idx + 1), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "7px 9px",
-          fontWeight: 500
-        }
-      }, s.name), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "7px 9px",
-          color: "#6b7280",
-          fontSize: 11
-        }
-      }, s.grade || g), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => {
-          const cy = {
-            حاضر: "غائب",
-            غائب: "متأخر",
-            متأخر: "حاضر"
-          };
-          // Update student attendance
-          // This requires access to setStudents - passed via window for now
-          if (window._updateStudentAtt) window._updateStudentAtt(st, g, s.id, examKey, cy[att]);
-        },
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          background: attB,
-          color: attC,
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: "Tajawal,sans-serif"
-        }
-      }, att)), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => {
-          if (window._updateStudentRecv) window._updateStudentRecv(st, g, s.id, examKey, !recv);
-        },
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          background: recv ? "#E4F5EE" : "#f3f4f6",
-          color: recv ? "#1D9E75" : "#6b7280",
-          fontSize: 11,
-          fontWeight: 500,
-          fontFamily: "Tajawal,sans-serif"
-        }
-      }, recv ? "✓ استلم" : "لم يستلم")), /*#__PURE__*/React.createElement("td", {
-        style: {
-          padding: "5px 9px"
-        }
-      }, /*#__PURE__*/React.createElement("button", {
-        onClick: () => {
-          if (window._updateStudentSub) window._updateStudentSub(st, g, s.id, examKey, !sub2);
-        },
-        style: {
-          padding: "4px 10px",
-          borderRadius: 20,
-          border: "none",
-          cursor: "pointer",
-          background: sub2 ? "#E4F5EE" : "#FCEBEB",
-          color: sub2 ? "#1D9E75" : "#E24B4A",
-          fontSize: 11,
-          fontWeight: 500,
-          fontFamily: "Tajawal,sans-serif"
-        }
-      }, sub2 ? "✓ سلّم" : "لم يسلّم")));
-    }))));
-  }));
+    }, idx + 1), /*#__PURE__*/React.createElement("td", {
+      style: {
+        padding: "7px 9px",
+        fontWeight: 500
+      }
+    }, s.name), /*#__PURE__*/React.createElement("td", {
+      style: {
+        padding: "7px 9px",
+        color: "#6b7280",
+        fontSize: 11
+      }
+    }, s.grade || selAsgn.g), /*#__PURE__*/React.createElement("td", {
+      style: {
+        padding: "5px 9px"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => updateAtt(s.id, examKey, attNext[att]),
+      style: {
+        padding: "4px 10px",
+        borderRadius: 20,
+        border: "none",
+        cursor: "pointer",
+        background: attB,
+        color: attC,
+        fontSize: 11,
+        fontWeight: 600,
+        fontFamily: "Tajawal,sans-serif"
+      }
+    }, att)), /*#__PURE__*/React.createElement("td", {
+      style: {
+        padding: "5px 9px"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => updateRecv(s.id, examKey, !recv),
+      style: {
+        padding: "4px 10px",
+        borderRadius: 20,
+        border: "none",
+        cursor: "pointer",
+        background: recv ? "#E4F5EE" : "#f3f4f6",
+        color: recv ? "#1D9E75" : "#6b7280",
+        fontSize: 11,
+        fontFamily: "Tajawal,sans-serif"
+      }
+    }, recv ? "✓ استلم" : "لم يستلم")), /*#__PURE__*/React.createElement("td", {
+      style: {
+        padding: "5px 9px"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => updateSub(s.id, examKey, !sub2),
+      style: {
+        padding: "4px 10px",
+        borderRadius: 20,
+        border: "none",
+        cursor: "pointer",
+        background: sub2 ? "#E4F5EE" : "#FCEBEB",
+        color: sub2 ? "#1D9E75" : "#E24B4A",
+        fontSize: 11,
+        fontFamily: "Tajawal,sans-serif"
+      }
+    }, sub2 ? "✓ سلّم" : "لم يسلّم")));
+  })))));
 }
-
-// ===== CONSTANTS =====
-const STAGES = ["ابتدائي", "متوسط", "ثانوي"];
-const GRADES = {
-  ابتدائي: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
-  متوسط: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
-  ثانوي: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
-};
-const SUBJECTS_BY_STAGE = {
-  ابتدائي: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "التربية البدنية"],
-  متوسط: ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "الفقه"],
-  ثانوي: ["التوحيد", "اللغة العربية", "الرياضيات", "الفيزياء", "الكيمياء", "الأحياء", "اللغة الإنجليزية", "الحاسب"]
-};
-const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
-const INV_POOL = ["أ. خالد العمري", "أ. فهد الشمري", "أ. نجلاء الحربي", "أ. محمد الدوسري", "أ. سلمى الزهراني", "أ. عمر المالكي", "أ. رنا السهلي", "أ. لانا العمري", "أ. ريم الشمري", "أ. عبدالله القحطاني", "أ. فيصل المطيري", "أ. هند الحربي"];
-const Q_STATUSES = ["لم تسلّم", "مسلّمة", "قيد المراجعة", "معتمدة", "مطبوعة"];
-const QSC = {
-  "لم تسلّم": "#E24B4A",
-  "مسلّمة": "#EF9F27",
-  "قيد المراجعة": "#378ADD",
-  "معتمدة": "#1D9E75",
-  "مطبوعة": "#534AB7"
-};
-const QSB = {
-  "لم تسلّم": "#FCEBEB",
-  "مسلّمة": "#FEF3E2",
-  "قيد المراجعة": "#E6F1FB",
-  "معتمدة": "#E4F5EE",
-  "مطبوعة": "#EEEDFE"
-};
-const PAPER_STEPS = [{
-  id: "sealed",
-  label: "المظاريف مختومة",
-  icon: "🔒"
-}, {
-  id: "opened",
-  label: "فتح المظاريف",
-  icon: "✉️"
-}, {
-  id: "received",
-  label: "استلام الطلاب",
-  icon: "📋"
-}, {
-  id: "solving",
-  label: "الحل والمراقبة",
-  icon: "✍️"
-}, {
-  id: "submitted",
-  label: "تسليم الأوراق",
-  icon: "📤"
-}, {
-  id: "verified",
-  label: "التحقق من الأوراق",
-  icon: "🔍"
-}, {
-  id: "corrected",
-  label: "التصحيح",
-  icon: "✏️"
-}, {
-  id: "reviewed",
-  label: "مراجعة التصحيح",
-  icon: "👁️"
-}, {
-  id: "recorded",
-  label: "الرصد في نور",
-  icon: "💻"
-}, {
-  id: "audited",
-  label: "التدقيق",
-  icon: "✅"
-}, {
-  id: "published",
-  label: "إعلان النتائج",
-  icon: "📢"
-}];
-const TARGET_IDX = PAPER_STEPS.findIndex(s => s.id === "recorded");
-const FINAL_IDX = PAPER_STEPS.length - 1;
-function hijriToGregorian(h) {
-  try {
-    const [y,m,d] = h.split('/').map(Number);
-    if(!y||!m||!d) return '';
-    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-    return d+' '+months[((m+8)%12)]+' '+(2024+(y-1446));
-  } catch { return ''; }
-}
-const AUDITED_IDX = PAPER_STEPS.findIndex(s => s.id === "audited");
-const MEDALS = ["🥇", "🥈", "🥉"];
-const RATING_OPTIONS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
-const RATING_COLOR = {
-  "ممتاز": "#1D9E75",
-  "جيد جداً": "#378ADD",
-  "جيد": "#534AB7",
-  "مقبول": "#EF9F27",
-  "ضعيف": "#E24B4A"
-};
-const stC = {
-  ابتدائي: "#1D9E75",
-  متوسط: "#378ADD",
-  ثانوي: "#534AB7"
-};
-const stB = {
-  ابتدائي: "#E4F5EE",
-  متوسط: "#E6F1FB",
-  ثانوي: "#EEEDFE"
-};
-const initScheduleTpls = () => ({
-  ابتدائي: [{
-    id: "tpl-ab-1",
-    name: "جدول الصفوف 1-4",
-    appliedTo: ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الاجتماعيات",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }]
-  }, {
-    id: "tpl-ab-2",
-    name: "جدول الصفوف 5-6",
-    appliedTo: ["5/أ", "5/ب", "6/أ", "6/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الاجتماعيات",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e6",
-      subject: "القرآن الكريم",
-      date: "1446/12/26",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 60,
-      room: ""
-    }]
-  }],
-  متوسط: [{
-    id: "tpl-mid-1",
-    name: "جدول المرحلة المتوسطة",
-    appliedTo: ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "العلوم",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "الفقه",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 60,
-      room: ""
-    }]
-  }],
-  ثانوي: [{
-    id: "tpl-sec-1",
-    name: "جدول المرحلة الثانوية",
-    appliedTo: ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"],
-    exams: [{
-      id: "e1",
-      subject: "اللغة العربية",
-      date: "1446/12/15",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e2",
-      subject: "الرياضيات",
-      date: "1446/12/17",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 120,
-      room: ""
-    }, {
-      id: "e3",
-      subject: "الفيزياء",
-      date: "1446/12/19",
-      day: "الخميس",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e4",
-      subject: "الكيمياء",
-      date: "1446/12/22",
-      day: "الأحد",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }, {
-      id: "e5",
-      subject: "اللغة الإنجليزية",
-      date: "1446/12/24",
-      day: "الثلاثاء",
-      time: "8:00 ص",
-      duration: 90,
-      room: ""
-    }]
-  }]
-});
-const initSubjects = () => {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = SUBJECTS_BY_STAGE[st].map((name, i) => ({
-      id: i + 1,
-      name,
-      teacher: INV_POOL[i % INV_POOL.length],
-      supervisor: INV_POOL[(i + 3) % INV_POOL.length],
-      curriculumDone: [100, 95, 88, 100, 72, 100, 60, 85][i % 8],
-      questionStatus: ["معتمدة", "قيد المراجعة", "مسلّمة", "معتمدة", "لم تسلّم", "مطبوعة", "لم تسلّم", "معتمدة"][i % 8],
-      submitted: [true, true, true, true, false, true, false, true][i % 8]
-    }));
-  });
-  return r;
-};
-const initStudents = () => {
-  const names = ["محمد القحطاني", "أحمد الزهراني", "سلمى العتيبي", "عبدالله الدوسري", "نورة السهلي", "فيصل المطيري", "ريم الخالدي", "لانا العمري"];
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = names.slice(0, 6).map((name, i) => ({
-        id: i + 1,
-        name,
-        num: `${2024 + i}`,
-        grade: g,
-        attendance: {},
-        paperReceived: {},
-        paperSubmitted: {},
-        paperSolved: {}
-      }));
-    });
-  });
-  return r;
-};
-const initCommittees = () => {
-  const r = {};
-  STAGES.forEach(st => {
-    r[st] = {};
-    GRADES[st].forEach(g => {
-      r[st][g] = [{
-        room: "",
-        inv1: INV_POOL[0],
-        inv2: INV_POOL[1],
-        inv1Present: null,
-        inv2Present: null,
-        inv1Note: "",
-        inv2Note: "",
-        inv1Time: "",
-        inv2Time: ""
-      }];
-    });
-  });
-  return r;
-};
-const TABS = [{
-  id: "dashboard",
-  icon: "⊞",
-  label: "الداش بورد"
-}, {
-  id: "schedules",
-  icon: "📅",
-  label: "جداول الاختبارات"
-}, {
-  id: "curriculum",
-  icon: "📚",
-  label: "اكتمال المنهج"
-}, {
-  id: "questions",
-  icon: "📝",
-  label: "الأسئلة والاعتماد"
-}, {
-  id: "committees",
-  icon: "👥",
-  label: "لجان الاختبار"
-}, {
-  id: "invigilators",
-  icon: "🕐",
-  label: "مراقبة المراقبين"
-}, {
-  id: "attendance",
-  icon: "✔️",
-  label: "حضور وأوراق الطلاب"
-}, {
-  id: "daily_report",
-  icon: "📊",
-  label: "التقرير اليومي"
-}, {
-  id: "lifecycle",
-  icon: "🔄",
-  label: "خط السير"
-}, {
-  id: "ranking",
-  icon: "🏆",
-  label: "التنافسي"
-}, {
-  id: "publish",
-  icon: "📢",
-  label: "النشر"
-}];
-const getGradeExams = (tpls, stage, grade) => {
-  const tpl = (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
-  return tpl ? tpl.exams : [];
-};
-const getGradeTpl = (tpls, stage, grade) => (tpls[stage] || []).find(t => t.appliedTo.includes(grade));
 function AppMain({
   school,
   user,
@@ -3282,7 +2854,13 @@ function AppMain({
     const i = PAPER_STEPS.findIndex(s => s.id === (examLife[key] || "sealed"));
     return i < 0 ? 0 : i;
   };
-  const goBackLife = key => { const i=getLifeIdx(key); if(i>0) setExamLife(p=>({...p,[key]:PAPER_STEPS[i-1].id})); };
+  const goBackLife = key => {
+    const i = getLifeIdx(key);
+    if (i > 0) setExamLife(p => ({
+      ...p,
+      [key]: PAPER_STEPS[i - 1].id
+    }));
+  };
   const advanceLife = key => {
     const idx = getLifeIdx(key);
     if (idx < FINAL_IDX) {
@@ -3727,75 +3305,7 @@ function AppMain({
       fontWeight: 700,
       color: "#534AB7"
     }
-  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637"))))))),
-/*#__PURE__*/React.createElement("div", {style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}},
-  /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
-    /*#__PURE__*/React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
-      /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700}}, "📊 \u0625\u0646\u062C\u0627\u0632 \u0634\u0639\u0628 \u0627\u0644\u0645\u0648\u0627\u062F"),
-      /*#__PURE__*/React.createElement("button", {
-        onClick: () => {
-          const subs = [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))];
-          const rows = subs.map(sub => {
-            const all = [];
-            STAGES.forEach(st => GRADES[st].forEach(g => { if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)) all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX); }));
-            const done=all.filter(Boolean).length;
-            return sub+","+Math.round(done/Math.max(all.length,1)*100)+"%,"+done+"/"+all.length;
-          });
-          const csv="\uFEFF\u0634\u0639\u0628\u0629 \u0627\u0644\u0645\u0627\u062f\u0629,\u0646\u0633\u0628\u0629,\u0627\u0644\u0641\u0635\u0648\u0644\n"+rows.join("\n");
-          const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="\u0634\u0639\u0628.csv"; a.click();
-        },
-        style:{padding:"5px 10px",borderRadius:8,border:"0.5px solid #1D9E75",background:"#E4F5EE",color:"#1D9E75",fontSize:11,cursor:"pointer"}
-      }, "📥 CSV")
-    ),
-    /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:8}},
-      [...new Set(Object.values(tpls).flat().flatMap(t=>(t.exams||[]).map(e=>e.subject)))].map(sub => {
-        const all=[];
-        STAGES.forEach(st=>GRADES[st].forEach(g=>{if((getGradeExams(tpls,st,g)||[]).some(e=>e.subject===sub)) all.push(getLifeIdx(st+"-"+g+"-"+sub)>=TARGET_IDX);}));
-        const done=all.filter(Boolean).length, pct=Math.round(done/Math.max(all.length,1)*100);
-        const pc=pct===100?"#1D9E75":pct>=60?"#EF9F27":"#E24B4A";
-        return /*#__PURE__*/React.createElement("div", {key:sub, style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"0.5px solid #f3f4f6"}},
-          /*#__PURE__*/React.createElement("div", {style:{minWidth:120,fontSize:12,fontWeight:600}}, "\u0634\u0639\u0628\u0629 "+sub),
-          /*#__PURE__*/React.createElement("div", {style:{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}},
-            /*#__PURE__*/React.createElement("div", {style:{width:pct+"%",height:"100%",background:pc}})
-          ),
-          /*#__PURE__*/React.createElement("span", {style:{fontWeight:700,color:pc,minWidth:40,textAlign:"left"}}, pct+"%")
-        );
-      })
-    )
-  ),
-  /*#__PURE__*/React.createElement("div", {style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:16}},
-    /*#__PURE__*/React.createElement("div", {style:{fontSize:13,fontWeight:700,marginBottom:12}}, "👥 \u062D\u0636\u0648\u0631 \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
-    /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8,marginBottom:10}},
-      [["\u062D\u0627\u0636\u0631","#1D9E75","#E4F5EE",
-          Object.values(committees).flatMap(st=>Object.values(st)).flat().filter(r=>r.inv1Present===true||r.inv2Present===true).length],
-       ["\u063A\u0627\u0626\u0628","#E24B4A","#FCEBEB",
-          Object.values(committees).flatMap(st=>Object.values(st)).flat().filter(r=>r.inv1Present===false||r.inv2Present===false).length]
-      ].map(([lbl,c,b,v]) =>
-        /*#__PURE__*/React.createElement("div", {key:lbl, style:{flex:1,padding:"8px",background:b,borderRadius:8,textAlign:"center"}},
-          /*#__PURE__*/React.createElement("div", {style:{fontSize:20,fontWeight:700,color:c}}, v),
-          /*#__PURE__*/React.createElement("div", {style:{fontSize:11,color:"#6b7280"}}, lbl)
-        )
-      )
-    ),
-    Object.values(committees).flatMap(st=>Object.values(st)).flat().length===0
-      ? /*#__PURE__*/React.createElement("div", {style:{color:"#9ca3af",fontSize:11,textAlign:"center",padding:10}}, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0644\u062C\u0627\u0646")
-      : /*#__PURE__*/React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:4,maxHeight:160,overflowY:"auto"}},
-          Object.entries(committees).flatMap(([st,grades])=>
-            Object.entries(grades).flatMap(([g,rooms])=>
-              rooms.map((room,i)=>{
-                const p1=room.inv1Present,p2=room.inv2Present;
-                return /*#__PURE__*/React.createElement("div", {key:st+g+i, style:{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",background:"#f9fafb",borderRadius:6}},
-                  /*#__PURE__*/React.createElement("span", {style:{fontSize:11,fontWeight:600,minWidth:45}}, "\u0642 "+(room.room||("10"+(i+1)))),
-                  room.inv1&&/*#__PURE__*/React.createElement("span", {style:{fontSize:10,padding:"1px 6px",borderRadius:20,background:p1===true?"#E4F5EE":p1===false?"#FCEBEB":"#f3f4f6",color:p1===true?"#1D9E75":p1===false?"#E24B4A":"#9ca3af"}}, room.inv1+" "+(p1===true?"✓":p1===false?"✗":"?")),
-                  room.inv2&&/*#__PURE__*/React.createElement("span", {style:{fontSize:10,padding:"1px 6px",borderRadius:20,background:p2===true?"#E4F5EE":p2===false?"#FCEBEB":"#f3f4f6",color:p2===true?"#1D9E75":p2===false?"#E24B4A":"#9ca3af"}}, room.inv2+" "+(p2===true?"✓":p2===false?"✗":"?"))
-                );
-              })
-            )
-          )
-        )
-  )
-),
-/*#__PURE__*/React.createElement("div", {
+  }, (tpls[st] || []).length, " \u062C\u062F\u0648\u0644 \u2014 ", (tpls[st] || []).reduce((a, t) => a + t.appliedTo.length, 0), " \u0641\u0635\u0644 \u0645\u064F\u0631\u0628\u0637")))))), /*#__PURE__*/React.createElement("div", {
     style: cd
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3957,7 +3467,201 @@ function AppMain({
         }, step?.label)));
       }));
     })))));
-  })))), tab === "schedules" && /*#__PURE__*/React.createElement("div", {
+  })))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 14,
+      marginTop: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 12,
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700
+    }
+  }, "📊 إنجاز شعب المواد"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const subs = [...new Set(Object.values(tpls).flat().flatMap(t => (t.exams || []).map(e => e.subject)))];
+      const rows = subs.map(sub => {
+        const all = [];
+        STAGES.forEach(st => GRADES[st].forEach(g => {
+          if ((getGradeExams(tpls, st, g) || []).some(e => e.subject === sub)) all.push(getLifeIdx(st + "-" + g + "-" + sub) >= TARGET_IDX);
+        }));
+        const done = all.filter(Boolean).length;
+        return sub + "," + Math.round(done / Math.max(all.length, 1) * 100) + "%," + done + "/" + all.length;
+      });
+      const csv = "شعبة المادة,نسبة الإنجاز,الفصول المنجزة\n" + rows.join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], {
+        type: "text/csv"
+      }));
+      a.download = "dept_report.csv";
+      a.click();
+    },
+    style: {
+      padding: "4px 8px",
+      borderRadius: 6,
+      border: "0.5px solid #1D9E75",
+      background: "#E4F5EE",
+      color: "#1D9E75",
+      fontSize: 10,
+      cursor: "pointer"
+    }
+  }, "📥 CSV")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, [...new Set(Object.values(tpls).flat().flatMap(t => (t.exams || []).map(e => e.subject)))].map(sub => {
+    const all = [];
+    STAGES.forEach(st => GRADES[st].forEach(g => {
+      if ((getGradeExams(tpls, st, g) || []).some(e => e.subject === sub)) all.push(getLifeIdx(st + "-" + g + "-" + sub) >= TARGET_IDX);
+    }));
+    const done = all.filter(Boolean).length,
+      pct = Math.round(done / Math.max(all.length, 1) * 100);
+    const pc = pct === 100 ? "#1D9E75" : pct >= 60 ? "#EF9F27" : "#E24B4A";
+    return /*#__PURE__*/React.createElement("div", {
+      key: sub,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "4px 0"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        fontWeight: 600,
+        minWidth: 110
+      }
+    }, "شعبة " + sub), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: 6,
+        background: "#f3f4f6",
+        borderRadius: 3,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: pct + "%",
+        height: "100%",
+        background: pc
+      }
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: pc,
+        minWidth: 36
+      }
+    }, pct + "%"));
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "#fff",
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 12,
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      marginBottom: 10
+    }
+  }, "👥 حضور المراقبين"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 8
+    }
+  }, [["حاضر", "#1D9E75", "#E4F5EE", Object.values(committees).flatMap(st => Object.values(st)).flat().filter(r => r.inv1Present === true || r.inv2Present === true).length], ["غائب", "#E24B4A", "#FCEBEB", Object.values(committees).flatMap(st => Object.values(st)).flat().filter(r => r.inv1Present === false || r.inv2Present === false).length]].map(([lbl, c, b, v]) => /*#__PURE__*/React.createElement("div", {
+    key: lbl,
+    style: {
+      flex: 1,
+      padding: "8px",
+      background: b,
+      borderRadius: 8,
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 20,
+      fontWeight: 700,
+      color: c
+    }
+  }, v), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#6b7280"
+    }
+  }, lbl)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 4,
+      maxHeight: 140,
+      overflowY: "auto"
+    }
+  }, Object.values(committees).flatMap(st => Object.values(st)).flat().length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "#9ca3af",
+      fontSize: 11,
+      textAlign: "center",
+      padding: 10
+    }
+  }, "لا توجد لجان") : Object.entries(committees).flatMap(([st, grades]) => Object.entries(grades).flatMap(([g, rooms]) => rooms.map((room, i) => {
+    const p1 = room.inv1Present,
+      p2 = room.inv2Present;
+    return /*#__PURE__*/React.createElement("div", {
+      key: st + g + i,
+      style: {
+        display: "flex",
+        gap: 6,
+        padding: "4px 8px",
+        background: "#f9fafb",
+        borderRadius: 6,
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 600,
+        minWidth: 45
+      }
+    }, "ق " + (room.room || "10" + (i + 1))), room.inv1 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        padding: "1px 6px",
+        borderRadius: 20,
+        background: p1 === true ? "#E4F5EE" : p1 === false ? "#FCEBEB" : "#f3f4f6",
+        color: p1 === true ? "#1D9E75" : p1 === false ? "#E24B4A" : "#9ca3af"
+      }
+    }, room.inv1.replace("أ. ", "") + " " + (p1 === true ? "✓" : p1 === false ? "✗" : "?")), room.inv2 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        padding: "1px 6px",
+        borderRadius: 20,
+        background: p2 === true ? "#E4F5EE" : p2 === false ? "#FCEBEB" : "#f3f4f6",
+        color: p2 === true ? "#1D9E75" : p2 === false ? "#E24B4A" : "#9ca3af"
+      }
+    }, room.inv2.replace("أ. ", "") + " " + (p2 === true ? "✓" : p2 === false ? "✗" : "?")));
+  })))))), tab === "schedules" && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -4408,11 +4112,22 @@ function AppMain({
       fontSize: 14,
       fontWeight: 700
     }
-  }, "\u0644\u062C\u0627\u0646 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8,flexWrap:"wrap"}},
-    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowStudentMgr(true), style:btn("#1D9E75","#fff","#1D9E75")}, "👤 \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0637\u0644\u0627\u0628"),
-    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowRoomBuilder(true), style:btn("#534AB7","#fff","#534AB7")}, "🏛️ \u062A\u0634\u0643\u064A\u0644 \u0627\u0644\u0642\u0627\u0639\u0627\u062A"),
-    /*#__PURE__*/React.createElement("button", {onClick:()=>setShowDailyAsgn(true), style:btn("#EF9F27","#1a2940","#EF9F27")}, "📋 \u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646"),
-    /*#__PURE__*/React.createElement("button", {
+  }, "\u0644\u062C\u0627\u0646 \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631 \u2014 ", selGrade), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowStudentMgr(true),
+    style: btn("#1D9E75", "#fff", "#1D9E75")
+  }, "👤 إدارة الطلاب"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowRoomBuilder(true),
+    style: btn("#534AB7", "#fff", "#534AB7")
+  }, "🏛 تشكيل القاعات"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowDailyAsgn(true),
+    style: btn("#EF9F27", "#1a2940", "#EF9F27")
+  }, "📋 إسناد المراقبين"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setCommittees(p => {
       const ns = {
         ...p
@@ -4559,6 +4274,7 @@ function AppMain({
   }, st.name))))))), tab === "invigilators" && (user?.role === "invigilator" ? /*#__PURE__*/React.createElement(InvigilatorView, {
     user: user,
     students: students,
+    setStudents: setStudents,
     committees: committees,
     tpls: tpls,
     stage: stage,
@@ -5187,17 +4903,15 @@ function AppMain({
         color: "#6b7280",
         marginTop: 2
       }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:8}},
-      curIdx > 0 && /*#__PURE__*/React.createElement("button", {
-        onClick: () => goBackLife(selExam),
-        style: btn("#f3f4f6","#374151","#d1d5db")
-      }, "\u2192 \u062A\u0631\u0627\u062C\u0639"),
-      curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
+    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx > 0 ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => goBackLife(selExam),
+      style: btn("#f3f4f6", "#374151", "#d1d5db")
+    }, "→ تراجع") : null, curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
       onClick: () => advanceLife(selExam),
       style: btn(stC[stage], "#fff", stC[stage])
     }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
       style: bdg("#1D9E75", "#E4F5EE")
-    }, "\u2705 \u0627\u0643\u062A\u0645\u0644")))));
+    }, "\u2705 \u0627\u0643\u062A\u0645\u0644"))));
   })())), tab === "ranking" && (() => {
     const rows = [];
     STAGES.forEach(st => {
@@ -6205,16 +5919,136 @@ function AppMain({
   }, "\u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEditSubj(null),
     style: btn()
-  }, "\u0625\u0644\u063A\u0627\u0621"))));
+  }, "\u0625\u0644\u063A\u0627\u0621")))));
 }
 
-    try {
-      const _root = ReactDOM.createRoot(document.getElementById("root"));
-      _root.render(React.createElement(App, null));
-    } catch(e) {
-      console.error("RENDER ERROR:", e);
-      document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:sans-serif;direction:rtl;color:red"><h2>خطأ في التشغيل</h2><pre style="direction:ltr;text-align:left;font-size:12px;white-space:pre-wrap">' + e.stack + '</pre></div>';
+
+function App() {
+  const [ready, setReady] = useState(false);
+  const [accounts, setAccounts] = useState(DEFAULT_ACCOUNTS);
+  const [school, setSchool] = useState(DEFAULT_SCHOOL);
+  const [user, setUser] = useState(null);
+  const [showSchool, setShowSchool] = useState(false);
+  const [showAccMgr, setShowAccMgr] = useState(false);
+
+  // Load from Firebase on start
+  useEffect(() => {
+    async function init() {
+      const [accData, schData] = await Promise.all([fbGet("system", "accounts"), fbGet("system", "school")]);
+      if (accData?.list) {
+        // Merge Firebase accounts with defaults to ensure tabs field always exists
+        const merged = accData.list.map(acc => {
+          if (acc.tabs !== undefined) return acc; // already has tabs
+          const def = DEFAULT_ACCOUNTS.find(d => d.id === acc.id);
+          return {
+            ...acc,
+            tabs: def?.tabs || []
+          }; // fallback to default tabs
+        });
+        setAccounts(merged);
+      }
+      if (schData?.name) setSchool(schData);
+      setReady(true);
     }
+    init();
+  }, []);
+
+  // Set globals for AppMain
+  useEffect(() => {
+    window._currentUser = user;
+    window._logout = () => setUser(null);
+  }, [user]);
+  const saveAccounts = async list => {
+    setAccounts(list);
+    await fbSet("system", "accounts", {
+      list
+    });
+  };
+  const saveSchool = async s => {
+    setSchool(s);
+    await fbSet("system", "school", s);
+  };
+
+  // Loading screen
+  if (!ready) return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: "#1a2940",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "Tajawal,sans-serif",
+      direction: "rtl"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 40,
+      marginBottom: 16
+    }
+  }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 600,
+      marginBottom: 16
+    }
+  }, "\u062C\u0627\u0631\u064D \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0646\u0638\u0627\u0645..."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 40,
+      height: 40,
+      border: "4px solid rgba(255,255,255,.2)",
+      borderTopColor: "#fff",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite",
+      margin: "0 auto"
+    }
+  })));
+
+  // Login screen
+  if (!user) return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(LoginScreen, {
+    onLogin: setUser,
+    accounts: accounts,
+    school: school
+  }), showSchool && /*#__PURE__*/React.createElement(SchoolSettings, {
+    school: school,
+    onSave: async s => {
+      await saveSchool(s);
+      setShowSchool(false);
+    },
+    onClose: () => setShowSchool(false)
+  }));
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(AppMain, {
+    school: school,
+    user: user,
+    accounts: accounts,
+    onLogout: () => setUser(null),
+    onShowSchool: () => setShowSchool(true),
+    onShowAccMgr: () => setShowAccMgr(true)
+  }), showSchool && /*#__PURE__*/React.createElement(SchoolSettings, {
+    school: school,
+    onSave: async s => {
+      await saveSchool(s);
+      setShowSchool(false);
+    },
+    onClose: () => setShowSchool(false)
+  }), showAccMgr && /*#__PURE__*/React.createElement(AccountsManager, {
+    accounts: accounts,
+    onSave: saveAccounts,
+    onClose: () => setShowAccMgr(false)
+  }));
+}
+
+// ══════════════════════════════════════════
+// STUDENT MANAGER (updated - no num, has section)
+// ══════════════════════════════════════════
+
+const _root = ReactDOM.createRoot(document.getElementById("root"));
+_root.render(React.createElement(App, null));
+
   </script>
 </body>
 </html>
