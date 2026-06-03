@@ -5155,7 +5155,8 @@ curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
         color: "#6b7280",
         marginTop: 2
       }
-    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
+    }, ex.subject, " \u2014 ", ex.date, " \u2014 ", ex.time)), curIdx > 0 ? /*#__PURE__*/React.createElement("button", {onClick: () => goBackLife(selExam), style: btn("#f3f4f6","#374151","#d1d5db")}, "→ تراجع") : null,
+curIdx < FINAL_IDX ? /*#__PURE__*/React.createElement("button", {
       onClick: () => advanceLife(selExam),
       style: btn(stC[stage], "#fff", stC[stage])
     }, "\u0627\u0644\u062A\u0627\u0644\u064A: ", PAPER_STEPS[curIdx + 1]?.label, " \u2190") : /*#__PURE__*/React.createElement("span", {
