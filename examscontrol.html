@@ -3725,12 +3725,44 @@ function AppMain({
 ),
 /*#__PURE__*/React.createElement("div",{style:{background:"#fff",border:"0.5px solid #e5e7eb",borderRadius:12,padding:14}},
 /*#__PURE__*/React.createElement("div",{style:{fontSize:12,fontWeight:700,marginBottom:8}},"👥 حضور المراقبين"),
-/*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:8}},
-[["#1D9E75","#E4F5EE","حاضر",Object.values(committees).flatMap(function(st){return Object.values(st);}).flat().filter(function(r){return r.inv1Present===true||r.inv2Present===true;}).length],
-["#E24B4A","#FCEBEB","غائب",Object.values(committees).flatMap(function(st){return Object.values(st);}).flat().filter(function(r){return r.inv1Present===false||r.inv2Present===false;}).length]]
-.map(function(a){return /*#__PURE__*/React.createElement("div",{key:a[2],style:{flex:1,padding:"8px",background:a[1],borderRadius:8,textAlign:"center"}},
-/*#__PURE__*/React.createElement("div",{style:{fontSize:20,fontWeight:700,color:a[0]}},a[3]),
-/*#__PURE__*/React.createElement("div",{style:{fontSize:10,color:"#6b7280"}},a[2]));}))
+/*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:8,marginBottom:8}},
+[["#1D9E75","#E4F5EE","حاضر",
+Object.values(committees).flatMap(function(st){return Object.values(st);}).flat().reduce(function(t,r){return t+(r.inv1Present===true?1:0)+(r.inv2Present===true?1:0);},0)],
+["#E24B4A","#FCEBEB","غائب",
+Object.values(committees).flatMap(function(st){return Object.values(st);}).flat().reduce(function(t,r){return t+(r.inv1Present===false?1:0)+(r.inv2Present===false?1:0);},0)]]
+.map(function(a){return /*#__PURE__*/React.createElement("div",{key:a[2],style:{flex:1,padding:"6px",background:a[1],borderRadius:8,textAlign:"center"}},
+/*#__PURE__*/React.createElement("div",{style:{fontSize:18,fontWeight:700,color:a[0]}},a[3]),
+/*#__PURE__*/React.createElement("div",{style:{fontSize:10,color:"#6b7280"}},a[2]));})),
+(function(){
+  var absentList=[];
+  Object.entries(committees).forEach(function(stE){
+    var st=stE[0];
+    Object.entries(stE[1]).forEach(function(gE){
+      var g=gE[0];
+      gE[1].forEach(function(room,ri){
+        var rn=room.room||("10"+(ri+1));
+        if(room.inv1Present===false){
+          var nm=(accounts||[]).find(function(a){return a.id===room.inv1;});
+          absentList.push({key:st+g+ri+"1",rn:rn,name:nm?nm.name:(room.inv1||"مراقب 1"),g:g});
+        }
+        if(room.inv2Present===false){
+          var nm2=(accounts||[]).find(function(a){return a.id===room.inv2;});
+          absentList.push({key:st+g+ri+"2",rn:rn,name:nm2?nm2.name:(room.inv2||"مراقب 2"),g:g});
+        }
+      });
+    });
+  });
+  if(absentList.length===0) return /*#__PURE__*/React.createElement("div",{style:{fontSize:11,color:"#9ca3af",textAlign:"center",padding:6}},"لا يوجد غائبون");
+  return /*#__PURE__*/React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:3,maxHeight:150,overflowY:"auto"}},
+    absentList.map(function(item){
+      return /*#__PURE__*/React.createElement("div",{key:item.key,style:{display:"flex",gap:6,padding:"3px 8px",background:"#FCEBEB",borderRadius:6,alignItems:"center"}},
+        /*#__PURE__*/React.createElement("span",{style:{fontSize:10,fontWeight:700,color:"#E24B4A",minWidth:42}},"ق "+item.rn),
+        /*#__PURE__*/React.createElement("span",{style:{fontSize:11,color:"#111827",flex:1}},item.name),
+        /*#__PURE__*/React.createElement("span",{style:{fontSize:9,color:"#9ca3af",background:"#f3f4f6",padding:"1px 6px",borderRadius:10}},item.g)
+      );
+    })
+  );
+})()
 )
 ), /*#__PURE__*/React.createElement("div", {
     style: cd
@@ -4496,7 +4528,17 @@ function AppMain({
       fontSize: 14,
       fontWeight: 700
     }
-  }, "\u0645\u0631\u0627\u0642\u0628\u0629 \u062A\u0648\u0627\u062C\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646 \u2014 ", selGrade), curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
+  }, "\u0645\u0631\u0627\u0642\u0628\u0629 \u062A\u0648\u0627\u062C\u062F \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u064A\u0646 \u2014 ", selGrade),
+/*#__PURE__*/React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:4}},
+(getGradeExams(tpls,stage,selGrade)||[]).map(function(ex){
+  var sel=(attExamKey||"")===(ex.id||"");
+  return /*#__PURE__*/React.createElement("button",{
+    key:ex.id,
+    onClick:()=>setAttExamKey(ex.id),
+    style:{padding:"5px 12px",borderRadius:8,border:"0.5px solid "+(sel?stC[stage]:"#d1d5db"),background:sel?stC[stage]:"#fff",color:sel?"#fff":"#374151",fontSize:11,cursor:"pointer",fontFamily:"Tajawal,sans-serif"}
+  },ex.subject," ",ex.date);
+})),
+curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       ...cd,
@@ -4534,7 +4576,7 @@ function AppMain({
       color: "#6b7280",
       marginTop: 2
     }
-  }, room[prefix] || "غير محدد")), /*#__PURE__*/React.createElement("div", {
+  }, (()=>{const exs=getGradeExams(tpls,stage,selGrade)||[];const curExId=attExamKey||(exs[0]&&exs[0].id);const ex=exs.find(function(e){return e.id===curExId;})||exs[0];const aId=ex&&room.assignments&&room.assignments[ex.id]&&room.assignments[ex.id][prefix];if(aId){  const ac=(accounts||[]).find(function(a){return a.id===aId;});  if(ac) return ac.name;}if(room[prefix]){  const ac2=(accounts||[]).find(function(a){return a.id===room[prefix];});  return ac2?ac2.name:room[prefix];}return "غير محدد";})())), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
