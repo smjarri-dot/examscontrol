@@ -3742,12 +3742,19 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
       gE[1].forEach(function(room,ri){
         var rn=room.room||("10"+(ri+1));
         if(room.inv1Present===false){
-          var nm=(accounts||[]).find(function(a){return a.id===room.inv1;});
-          absentList.push({key:st+g+ri+"1",rn:rn,name:nm?nm.name:(room.inv1||"مراقب 1"),g:g});
+          // Try assignments first, then room.inv1 as ID or name
+          var exsG=getGradeExams(tpls,st,g)||[];
+          var firstExId=exsG.length>0?exsG[0].id:null;
+          var aId1=(firstExId&&room.assignments&&room.assignments[firstExId])?room.assignments[firstExId].inv1:room.inv1;
+          var nm=(accounts||[]).find(function(a){return a.id===aId1;});
+          var nm1Name=nm?nm.name:(aId1&&aId1.length>3&&!/^inv\d/.test(aId1)?aId1:"");
+          if(nm1Name) absentList.push({key:st+g+ri+"1",rn:rn,name:nm1Name,g:g,st:st});
         }
         if(room.inv2Present===false){
-          var nm2=(accounts||[]).find(function(a){return a.id===room.inv2;});
-          absentList.push({key:st+g+ri+"2",rn:rn,name:nm2?nm2.name:(room.inv2||"مراقب 2"),g:g});
+          var aId2=(firstExId&&room.assignments&&room.assignments[firstExId])?room.assignments[firstExId].inv2:room.inv2;
+          var nm2=(accounts||[]).find(function(a){return a.id===aId2;});
+          var nm2Name=nm2?nm2.name:(aId2&&aId2.length>3&&!/^inv\d/.test(aId2)?aId2:"");
+          if(nm2Name) absentList.push({key:st+g+ri+"2",rn:rn,name:nm2Name,g:g,st:st});
         }
       });
     });
