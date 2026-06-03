@@ -3232,17 +3232,7 @@ const initCommittees = () => {
   STAGES.forEach(st => {
     r[st] = {};
     GRADES[st].forEach(g => {
-      r[st][g] = [{
-        room: "",
-        inv1: INV_POOL[0],
-        inv2: INV_POOL[1],
-        inv1Present: null,
-        inv2Present: null,
-        inv1Note: "",
-        inv2Note: "",
-        inv1Time: "",
-        inv2Time: ""
-      }];
+      r[st][g] = [];
     });
   });
   return r;
@@ -4530,8 +4520,9 @@ function AppMain({
       ns[stage] = {
         ...ns[stage]
       };
+      const newIdx = ns[stage][selGrade].length + 1;
       ns[stage][selGrade] = [...ns[stage][selGrade], {
-        room: "",
+        room: String(100 + newIdx),
         inv1: "",
         inv2: "",
         inv1Present: null,
@@ -4657,7 +4648,10 @@ function AppMain({
       flexWrap: "wrap",
       gap: 6
     }
-  }, curStudents.map(st => /*#__PURE__*/React.createElement("span", {
+  }, (room.studentIds && room.studentIds.length > 0
+    ? room.studentIds.map(id => curStudents.find(s => s.id === id)).filter(Boolean)
+    : curStudents
+  ).map(st => /*#__PURE__*/React.createElement("span", {
     key: st.id,
     style: {
       fontSize: 11,
