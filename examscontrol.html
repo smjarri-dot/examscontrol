@@ -299,10 +299,12 @@ function LoginScreen({
   }, school.logo ? /*#__PURE__*/React.createElement("img", {
     src: school.logo,
     style: {
-      width: 72,
-      height: 72,
-      borderRadius: "50%",
-      objectFit: "cover",
+      width: 80,
+      height: 80,
+      borderRadius: 12,
+      objectFit: "contain",
+      background: "#fff",
+      padding: 4,
       marginBottom: 10,
       border: "3px solid #e5e7eb"
     }
@@ -2054,7 +2056,9 @@ function RoomBuilder({
   const [search, setSearch] = useState("");
 
   // Assigned student IDs across all rooms
-  const assignedIds = new Set(rooms.flatMap(r => r.studentIds || []));
+  const _rawIds = rooms.flatMap(r => r.studentIds || []);
+  // Normalize: convert old numeric IDs to be ignored (they're cross-section ambiguous)
+  const assignedIds = new Set(_rawIds.filter(k => String(k).includes(':')));
   const filtered = allStudents.filter(s => {
     if (filterSec !== "all" && s.section !== filterSec) return false;
     if (search && !s.name.includes(search)) return false;
@@ -3774,10 +3778,12 @@ function AppMain({
   }, /*#__PURE__*/React.createElement("div", null, school?.logo ? /*#__PURE__*/React.createElement("img", {
     src: school.logo,
     style: {
-      width: 36,
-      height: 36,
-      borderRadius: "50%",
-      objectFit: "cover",
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      objectFit: "contain",
+      background: "#fff",
+      padding: 2,
       border: "2px solid rgba(255,255,255,.2)"
     }
   }) : /*#__PURE__*/React.createElement("span", {
@@ -4445,12 +4451,6 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
     }, /*#__PURE__*/React.createElement("span", {
       style: bdg(done ? "#1D9E75" : warn ? "#E24B4A" : "#EF9F27", done ? "#E4F5EE" : warn ? "#FCEBEB" : "#FEF3E2")
     }, done ? "مكتمل ✓" : warn ? "متأخر ⚠️" : "جارٍ")), /*#__PURE__*/React.createElement("td", {
-      style: {
-        padding: "9px 10px"
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: bdg(QSC[sub.questionStatus], QSB[sub.questionStatus])
-    }, sub.questionStatus)), /*#__PURE__*/React.createElement("td", {
       style: {
         padding: "9px 10px"
       }
