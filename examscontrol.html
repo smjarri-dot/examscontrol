@@ -463,16 +463,82 @@ function SchoolSettings({
   const [name, setName] = useState(school.name || "");
   const [sub, setSub] = useState(school.sub || "");
   const [logo, setLogo] = useState(school.logo || null);
+  const [activeTab, setActiveTab] = useState("info");
+  const [grades, setGrades] = useState(school.grades || {
+    "ابتدائي": ["1/أ", "1/ب", "2/أ", "2/ب", "3/أ", "3/ب", "4/أ", "4/ب", "5/أ", "5/ب", "6/أ", "6/ب"],
+    "متوسط": ["1م/أ", "1م/ب", "2م/أ", "2م/ب", "3م/أ", "3م/ب"],
+    "ثانوي": ["1ث/أ", "1ث/ب", "2ث/أ", "2ث/ب", "3ث/أ", "3ث/ب"]
+  });
+  const [subjects, setSubjects] = useState(school.subjects || {
+    "ابتدائي": ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "التربية البدنية"],
+    "متوسط": ["القرآن الكريم", "اللغة العربية", "الرياضيات", "العلوم", "الاجتماعيات", "اللغة الإنجليزية", "الحاسب", "الفقه"],
+    "ثانوي": ["التوحيد", "اللغة العربية", "الرياضيات", "الفيزياء", "الكيمياء", "الأحياء", "اللغة الإنجليزية", "الحاسب"]
+  });
+  const [activeStage, setActiveStage] = useState("ابتدائي");
+  const [newItem, setNewItem] = useState("");
+  const [editIdx, setEditIdx] = useState(null);
+  const [editVal, setEditVal] = useState("");
   const fileRef = useRef();
+  const stgC = {
+    "ابتدائي": "#1D9E75",
+    "متوسط": "#378ADD",
+    "ثانوي": "#534AB7"
+  };
   const inp = {
-    padding: "9px 12px",
+    padding: "8px 10px",
     border: "1px solid #d1d5db",
     borderRadius: 8,
-    fontSize: 13,
+    fontSize: 12,
     width: "100%",
     fontFamily: "Tajawal,sans-serif",
     outline: "none",
     boxSizing: "border-box"
+  };
+  const stages = Object.keys(grades);
+  const curData = activeTab === "grades" ? grades : subjects;
+  const setCurData = activeTab === "grades" ? setGrades : setSubjects;
+  const curList = curData[activeStage] || [];
+  const addItem = () => {
+    if (!newItem.trim()) return;
+    if (curList.includes(newItem.trim())) return;
+    setCurData({
+      ...curData,
+      [activeStage]: [...curList, newItem.trim()]
+    });
+    setNewItem("");
+  };
+  const removeItem = i => {
+    const arr = [...curList];
+    arr.splice(i, 1);
+    setCurData({
+      ...curData,
+      [activeStage]: arr
+    });
+  };
+  const startEdit = i => {
+    setEditIdx(i);
+    setEditVal(curList[i]);
+  };
+  const saveEdit = () => {
+    if (!editVal.trim()) return;
+    const arr = [...curList];
+    arr[editIdx] = editVal.trim();
+    setCurData({
+      ...curData,
+      [activeStage]: arr
+    });
+    setEditIdx(null);
+    setEditVal("");
+  };
+  const moveItem = (i, dir) => {
+    const arr = [...curList];
+    const n = i + dir;
+    if (n < 0 || n >= arr.length) return;
+    [arr[i], arr[n]] = [arr[n], arr[i]];
+    setCurData({
+      ...curData,
+      [activeStage]: arr
+    });
   };
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -480,9 +546,11 @@ function SchoolSettings({
       inset: 0,
       background: "rgba(0,0,0,.5)",
       display: "flex",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "center",
       zIndex: 300,
+      overflowY: "auto",
+      padding: "20px 0",
       fontFamily: "Tajawal,sans-serif",
       direction: "rtl"
     }
@@ -490,22 +558,22 @@ function SchoolSettings({
     style: {
       background: "#fff",
       borderRadius: 14,
-      padding: "28px 24px",
-      width: 420,
-      maxWidth: "92vw"
+      padding: "24px",
+      width: 580,
+      maxWidth: "95vw",
+      margin: "auto"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 20
+      marginBottom: 18
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
-      fontWeight: 700,
-      color: "#1a2940"
+      fontWeight: 700
     }
   }, "\uD83C\uDFEB \u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u0629"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
@@ -513,60 +581,75 @@ function SchoolSettings({
       border: "none",
       background: "none",
       cursor: "pointer",
-      fontSize: 20
+      fontSize: 22,
+      color: "#6b7280"
     }
   }, "\xD7")), /*#__PURE__*/React.createElement("div", {
     style: {
-      textAlign: "center",
-      marginBottom: 20
+      display: "flex",
+      borderRadius: 10,
+      overflow: "hidden",
+      border: "0.5px solid #e5e7eb",
+      marginBottom: 18
+    }
+  }, [["info", "ℹ️ معلومات المدرسة"], ["grades", "🏛️ الفصول الدراسية"], ["subjects", "📚 المواد الدراسية"]].map(([id, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setActiveTab(id),
+    style: {
+      flex: 1,
+      padding: "9px",
+      border: "none",
+      background: activeTab === id ? "#1a2940" : "#fff",
+      color: activeTab === id ? "#fff" : "#6b7280",
+      fontSize: 12,
+      cursor: "pointer",
+      fontFamily: "Tajawal,sans-serif",
+      fontWeight: activeTab === id ? 700 : 400
+    }
+  }, lbl))), activeTab === "info" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 14,
+      alignItems: "flex-start",
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      position: "relative",
-      display: "inline-block"
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: () => fileRef.current?.click(),
+    style: {
+      width: 68,
+      height: 68,
+      borderRadius: "50%",
+      overflow: "hidden",
+      background: "#f3f4f6",
+      border: "3px dashed #d1d5db",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 26
     }
   }, logo ? /*#__PURE__*/React.createElement("img", {
     src: logo,
     style: {
-      width: 90,
-      height: 90,
-      borderRadius: "50%",
-      objectFit: "cover",
-      border: "3px solid #e5e7eb",
-      display: "block"
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
     }
-  }) : /*#__PURE__*/React.createElement("div", {
+  }) : "🏫"), logo && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setLogo(null),
     style: {
-      width: 90,
-      height: 90,
-      borderRadius: "50%",
-      background: "#f3f4f6",
-      border: "3px dashed #d1d5db",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 36,
-      margin: "0 auto"
-    }
-  }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => fileRef.current?.click(),
-    style: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      width: 28,
-      height: 28,
-      borderRadius: "50%",
-      background: "#1a2940",
-      border: "2px solid #fff",
-      color: "#fff",
-      fontSize: 13,
+      fontSize: 10,
+      color: "#E24B4A",
+      background: "none",
+      border: "none",
       cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
+      marginTop: 3
     }
-  }, "+")), /*#__PURE__*/React.createElement("input", {
+  }, "\u062D\u0630\u0641"), /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: "image/*",
@@ -580,31 +663,18 @@ function SchoolSettings({
       r.onload = ev => setLogo(ev.target.result);
       r.readAsDataURL(f);
     }
-  }), logo && /*#__PURE__*/React.createElement("button", {
-    onClick: () => setLogo(null),
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: 6,
-      fontSize: 11,
-      color: "#E24B4A",
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      display: "block",
-      margin: "6px auto 0"
-    }
-  }, "\u062D\u0630\u0641 \u0627\u0644\u0634\u0639\u0627\u0631")), /*#__PURE__*/React.createElement("div", {
-    style: {
+      flex: 1,
       display: "flex",
       flexDirection: "column",
-      gap: 12,
-      marginBottom: 20
+      gap: 10
     }
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
-      color: "#374151",
-      marginBottom: 5
+      marginBottom: 3
     }
   }, "\u0627\u0633\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u0629"), /*#__PURE__*/React.createElement("input", {
     style: inp,
@@ -613,61 +683,63 @@ function SchoolSettings({
     placeholder: "\u0627\u0633\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u0629"
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
-      color: "#374151",
-      marginBottom: 5
+      marginBottom: 3
     }
   }, "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      gap: 6,
-      marginBottom: 8
+      gap: 5,
+      marginBottom: 6
     }
-  }, ["الفصل الدراسي الأول 1446هـ", "الفصل الدراسي الثاني 1446هـ"].map(s => /*#__PURE__*/React.createElement("button", {
-    key: s,
-    onClick: () => setSub(s),
-    style: {
-      flex: 1,
-      padding: "7px 4px",
-      borderRadius: 8,
-      border: `1px solid ${sub === s ? "#1a2940" : "#e5e7eb"}`,
-      background: sub === s ? "#1a2940" : "#fff",
-      color: sub === s ? "#fff" : "#374151",
-      fontSize: 11,
-      cursor: "pointer",
-      fontFamily: "Tajawal,sans-serif"
-    }
-  }, s.replace(" 1446هـ", "")))), /*#__PURE__*/React.createElement("input", {
+  }, ["الفصل الأول", "الفصل الثاني", "الفصل الثالث"].map((s, i) => {
+    const full = s + " 1446هـ";
+    return /*#__PURE__*/React.createElement("button", {
+      key: i,
+      onClick: () => setSub(full),
+      style: {
+        flex: 1,
+        padding: "5px 3px",
+        borderRadius: 7,
+        border: `1px solid ${sub === full ? "#1a2940" : "#e5e7eb"}`,
+        background: sub === full ? "#1a2940" : "#fff",
+        color: sub === full ? "#fff" : "#374151",
+        fontSize: 10,
+        cursor: "pointer",
+        fontFamily: "Tajawal,sans-serif"
+      }
+    }, s);
+  })), /*#__PURE__*/React.createElement("input", {
     style: inp,
     value: sub,
     onChange: e => setSub(e.target.value),
     placeholder: "\u0623\u0648 \u0646\u0635 \u0645\u062E\u0635\u0635..."
-  }))), /*#__PURE__*/React.createElement("div", {
+  })))), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: "10px 14px",
       background: "#1a2940",
       borderRadius: 10,
       display: "flex",
       alignItems: "center",
       gap: 10,
-      marginBottom: 20
+      marginBottom: 16
     }
   }, logo ? /*#__PURE__*/React.createElement("img", {
     src: logo,
     style: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: "50%",
       objectFit: "cover"
     }
   }) : /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 22
+      fontSize: 18
     }
   }, "\uD83C\uDFEB"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 700,
       color: "#fff"
     }
@@ -676,25 +748,188 @@ function SchoolSettings({
       fontSize: 10,
       color: "#94a3b8"
     }
-  }, sub || "الفصل الدراسي"))), /*#__PURE__*/React.createElement("div", {
+  }, sub)))), (activeTab === "grades" || activeTab === "subjects") && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      borderRadius: 8,
+      overflow: "hidden",
+      border: "0.5px solid #e5e7eb",
+      marginBottom: 12
+    }
+  }, stages.map(s => /*#__PURE__*/React.createElement("button", {
+    key: s,
+    onClick: () => {
+      setActiveStage(s);
+      setEditIdx(null);
+      setNewItem("");
+    },
+    style: {
+      flex: 1,
+      padding: "7px",
+      border: "none",
+      borderBottom: `2px solid ${activeStage === s ? stgC[s] || "#1D9E75" : "transparent"}`,
+      background: "#fff",
+      color: activeStage === s ? stgC[s] || "#1D9E75" : "#6b7280",
+      fontSize: 11,
+      cursor: "pointer",
+      fontFamily: "Tajawal,sans-serif",
+      fontWeight: activeStage === s ? 700 : 400
+    }
+  }, s, " (", curList.length, ")"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 8,
+      marginBottom: 10,
+      maxHeight: 240,
+      overflowY: "auto"
+    }
+  }, curList.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 20,
+      textAlign: "center",
+      color: "#9ca3af",
+      fontSize: 12
+    }
+  }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u2014 \u0623\u0636\u0641 \u0645\u0646 \u0627\u0644\u062D\u0642\u0644 \u0623\u062F\u0646\u0627\u0647") : curList.map((item, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      padding: "7px 10px",
+      borderBottom: i < curList.length - 1 ? "0.5px solid #f3f4f6" : "none"
+    }
+  }, editIdx === i ? /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...inp,
+      flex: 1
+    },
+    value: editVal,
+    onChange: e => setEditVal(e.target.value),
+    onKeyDown: e => e.key === "Enter" && saveEdit(),
+    autoFocus: true
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: 500
+    }
+  }, i + 1, ". ", item), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 4,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveItem(i, -1),
+    style: {
+      padding: "2px 6px",
+      borderRadius: 6,
+      border: "0.5px solid #e5e7eb",
+      background: "#f9fafb",
+      fontSize: 11,
+      cursor: "pointer"
+    }
+  }, "\u2191"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moveItem(i, 1),
+    style: {
+      padding: "2px 6px",
+      borderRadius: 6,
+      border: "0.5px solid #e5e7eb",
+      background: "#f9fafb",
+      fontSize: 11,
+      cursor: "pointer"
+    }
+  }, "\u2193"), editIdx === i ? /*#__PURE__*/React.createElement("button", {
+    onClick: saveEdit,
+    style: {
+      padding: "2px 8px",
+      borderRadius: 6,
+      border: "none",
+      background: "#1D9E75",
+      color: "#fff",
+      fontSize: 11,
+      cursor: "pointer"
+    }
+  }, "\u2713") : /*#__PURE__*/React.createElement("button", {
+    onClick: () => startEdit(i),
+    style: {
+      padding: "2px 8px",
+      borderRadius: 6,
+      border: "0.5px solid #378ADD",
+      background: "#E6F1FB",
+      color: "#1D4ED8",
+      fontSize: 11,
+      cursor: "pointer"
+    }
+  }, "\u062A\u0639\u062F\u064A\u0644"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (window.confirm("حذف؟")) removeItem(i);
+    },
+    style: {
+      padding: "2px 8px",
+      borderRadius: 6,
+      border: "0.5px solid #E24B4A",
+      background: "#FCEBEB",
+      color: "#E24B4A",
+      fontSize: 11,
+      cursor: "pointer"
+    }
+  }, "\u062D\u0630\u0641"))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    style: {
+      ...inp,
+      flex: 1
+    },
+    value: newItem,
+    onChange: e => setNewItem(e.target.value),
+    onKeyDown: e => e.key === "Enter" && addItem(),
+    placeholder: activeTab === "grades" ? "مثال: 1/ج" : "مثال: الفيزياء"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: addItem,
+    style: {
+      padding: "8px 16px",
+      borderRadius: 8,
+      border: "none",
+      background: stgC[activeStage] || "#1D9E75",
+      color: "#fff",
+      fontSize: 12,
+      cursor: "pointer",
+      fontFamily: "Tajawal,sans-serif",
+      whiteSpace: "nowrap"
+    }
+  }, "+ \u0625\u0636\u0627\u0641\u0629")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#9ca3af",
+      marginTop: 6
+    }
+  }, "\u26A0\uFE0F \u0627\u0644\u062A\u0639\u062F\u064A\u0644 \u064A\u0624\u062B\u0631 \u0639\u0644\u0649 \u062C\u0645\u064A\u0639 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0646\u0635\u0629")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 18
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => onSave({
       name,
       sub,
-      logo
+      logo,
+      grades,
+      subjects
     }),
     style: {
       flex: 1,
-      padding: "11px",
+      padding: "10px",
       border: "none",
       borderRadius: 10,
       background: "#1a2940",
       color: "#fff",
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 600,
       cursor: "pointer",
       fontFamily: "Tajawal,sans-serif"
@@ -702,20 +937,18 @@ function SchoolSettings({
   }, "\uD83D\uDCBE \u062D\u0641\u0638"), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     style: {
-      padding: "11px 18px",
+      padding: "10px 18px",
       border: "0.5px solid #d1d5db",
       borderRadius: 10,
       background: "#fff",
-      fontSize: 14,
+      fontSize: 13,
       cursor: "pointer",
       fontFamily: "Tajawal,sans-serif"
     }
   }, "\u0625\u0644\u063A\u0627\u0621"))));
 }
 
-// ══════════════════════════════════════════
-// ACCOUNTS MANAGER
-// ══════════════════════════════════════════
+
 function AccountsManager({
   accounts,
   onSave,
@@ -1165,7 +1398,7 @@ function App() {
         });
         setAccounts(merged);
       }
-      if(schData?.name){setSchool(schData);if(schData.grades)Object.assign(GRADES,schData.grades);}
+      if(schData?.name){setSchool(schData);if(schData.grades)Object.assign(GRADES,schData.grades);if(schData.subjects)Object.assign(SUBJECTS_BY_STAGE,schData.subjects);}
       setReady(true);
     }
     init();
@@ -1182,7 +1415,7 @@ function App() {
       list
     });
   };
-  const saveSchool = async s => { setSchool(s); if(s.grades)Object.assign(GRADES,s.grades); await fbSet("system","school",s); };
+  const saveSchool = async s => { setSchool(s); if(s.grades)Object.assign(GRADES,s.grades); if(s.subjects)Object.assign(SUBJECTS_BY_STAGE,s.subjects); await fbSet("system","school",s); };
 
   // Loading screen
   if (!ready) return /*#__PURE__*/React.createElement("div", {
@@ -1827,11 +2060,12 @@ function RoomBuilder({
     if (search && !s.name.includes(search)) return false;
     return true;
   });
-  const toggle = id => {
-    if (assignedIds.has(id)) return;
+  const toggle = (id, section) => {
+    const key = section + ':' + id;
+    if (assignedIds.has(key)) return;
     setSelStudents(prev => {
       const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
+      n.has(key) ? n.delete(key) : n.add(key);
       return n;
     });
   };
@@ -1850,10 +2084,10 @@ function RoomBuilder({
     });
     setSelStudents(new Set());
   };
-  const removeFromRoom = (ri, id) => {
+  const removeFromRoom = (ri, key) => {
     const updated = rooms.map((r, i) => i === ri ? {
       ...r,
-      studentIds: (r.studentIds || []).filter(x => x !== id)
+      studentIds: (r.studentIds || []).filter(x => x !== key)
     } : r);
     setCommittees({
       ...committees,
@@ -2042,11 +2276,11 @@ function RoomBuilder({
       fontSize: 12
     }
   }, "\u0644\u0627 \u064A\u0648\u062C\u062F \u0637\u0644\u0627\u0628") : filtered.map(s => {
-    const assigned = assignedIds.has(s.id);
-    const selected = selStudents.has(s.id);
+    const stKey = s.section + ':' + s.id; const assigned = assignedIds.has(stKey);
+    const selected = selStudents.has(stKey);
     return /*#__PURE__*/React.createElement("div", {
       key: `${s.section}-${s.id}`,
-      onClick: () => toggle(s.id),
+      onClick: () => toggle(s.id, s.section),
       style: {
         display: "flex",
         alignItems: "center",
@@ -2140,7 +2374,7 @@ function RoomBuilder({
       borderRadius: 8
     }
   }, "\u0627\u0636\u063A\u0637 \"+ \u0642\u0627\u0639\u0629\" \u0644\u0625\u0636\u0627\u0641\u0629 \u0642\u0627\u0639\u0629") : rooms.map((room, i) => {
-    const roomStudents = (room.studentIds || []).map(id => allStudents.find(s => s.id === id)).filter(Boolean);
+    const roomStudents = (room.studentIds || []).map(key => { const [sec,sid] = (key+'').split(':'); return allStudents.find(s => s.section===sec && String(s.id)===sid); }).filter(Boolean);
     return /*#__PURE__*/React.createElement("div", {
       key: i,
       onClick: () => setSelRoom(i),
@@ -2208,7 +2442,7 @@ function RoomBuilder({
     }, "(", s.section, ")"), /*#__PURE__*/React.createElement("button", {
       onClick: e => {
         e.stopPropagation();
-        removeFromRoom(i, s.id);
+        removeFromRoom(i, s.section + ':' + s.id);
       },
       style: {
         border: "none",
@@ -4505,7 +4739,7 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
       flexWrap: "wrap",
       gap: 6
     }
-  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(id){return curStudents.find(function(s){return s.id===id;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
+  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var parts=key.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
     key: st.id,
     style: {
       fontSize: 11,
