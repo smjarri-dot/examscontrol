@@ -2378,7 +2378,7 @@ function RoomBuilder({
       borderRadius: 8
     }
   }, "\u0627\u0636\u063A\u0637 \"+ \u0642\u0627\u0639\u0629\" \u0644\u0625\u0636\u0627\u0641\u0629 \u0642\u0627\u0639\u0629") : rooms.map((room, i) => {
-    const roomStudents = (room.studentIds || []).map(key => { const [sec,sid] = (key+'').split(':'); return allStudents.find(s => s.section===sec && String(s.id)===sid); }).filter(Boolean);
+    const roomStudents = (room.studentIds || []).map(key => { const k=String(key); if(!k.includes(':')) return null; const [sec,sid] = k.split(':'); return allStudents.find(s => s.section===sec && String(s.id)===sid); }).filter(Boolean);
     return /*#__PURE__*/React.createElement("div", {
       key: i,
       onClick: () => setSelRoom(i),
@@ -2803,7 +2803,7 @@ function InvigilatorView({
     ri
   }) => {
     const allSts = Object.values(students[st] || {}).flat();
-    const roomStudents = (room.studentIds || []).map(id => allSts.find(s => s.id === id)).filter(Boolean);
+    const roomStudents = (room.studentIds || []).map(function(key){var k=String(key);if(k.includes(':')){var p=k.split(':');return allSts.find(function(s){return s.section===p[0]&&String(s.id)===p[1];});}return allSts.find(function(s){return String(s.id)===k;});}).filter(Boolean);
     const examKey = selExam.ex.id;
     const present = roomStudents.filter(s => (s.attendance?.[examKey] || "حاضر") === "حاضر").length;
     const received = roomStudents.filter(s => s.paperReceived?.[examKey]).length;
@@ -4739,7 +4739,7 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
       flexWrap: "wrap",
       gap: 6
     }
-  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var parts=key.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
+  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var k=String(key);if(!k.includes(':'))return null;var parts=k.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
     key: st.id,
     style: {
       fontSize: 11,
