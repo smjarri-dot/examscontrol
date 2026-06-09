@@ -4641,7 +4641,44 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
       fontSize: 11,
       color: stC[stage]
     }
-  }, /*#__PURE__*/React.createElement("strong", null, "\u0627\u0644\u062C\u062F\u0648\u0644 \u0627\u0644\u0645\u064F\u0637\u0628\u064E\u0651\u0642:"), " ", curTpl.name, " \u2014 ", curExams.length, " \u0645\u0627\u062F\u0629"), curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("strong", null, "\u0627\u0644\u062C\u062F\u0648\u0644 \u0627\u0644\u0645\u064F\u0637\u0628\u064E\u0651\u0642:"), " ", curTpl.name, " \u2014 ", curExams.length, " \u0645\u0627\u062F\u0629"),
+/*#__PURE__*/React.createElement("button",{
+  onClick:()=>{
+    var allSts=Object.values(students[stage]||{}).flat();
+    var html="<html><head><meta charset=\"UTF-8\"><style>";
+    html+="body{font-family:Tajawal,sans-serif;direction:rtl;padding:20px;font-size:13px}";
+    html+="h1{font-size:18px;margin-bottom:4px}h2{font-size:12px;color:#555;margin-bottom:20px}";
+    html+=".room{margin-bottom:24px;border:1px solid #ccc;page-break-inside:avoid}";
+    html+=".rh{background:#1a2940;color:#fff;padding:8px 14px;display:flex;justify-content:space-between}";
+    html+=".ri{padding:6px 14px;background:#f5f5f5;border-bottom:1px solid #eee;font-size:11px}";
+    html+="table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 10px;text-align:right;font-size:12px}th{background:#f9f9f9}";
+    html+="</style></head><body>";
+    html+="<h1>"+(school.name||"")+"</h1>";
+    html+="<h2>كشف قاعات الاختبار — "+selGrade+" — "+stage+"</h2>";
+    (curComm||[]).forEach(function(room,ri){
+      var rs=(room.studentIds||[]).map(function(key){
+        var k=String(key);
+        if(k.includes(":")){var p=k.split(":");return allSts.find(function(s){return s.section===p[0]&&String(s.id)===p[1];});}
+        return allSts.find(function(s){return String(s.id)===k;});
+      }).filter(Boolean);
+      var inv1N="",inv2N="";
+      var exs=getGradeExams(tpls,stage,selGrade)||[];
+      var asgn=exs.length>0&&room.assignments&&room.assignments[exs[0].id];
+      if(asgn){var a1=(accounts||[]).find(function(a){return a.id===asgn.inv1;});inv1N=a1?a1.name:(asgn.inv1||"");var a2=(accounts||[]).find(function(a){return a.id===asgn.inv2;});inv2N=a2?a2.name:(asgn.inv2||"");}
+      if(!inv1N){var b1=(accounts||[]).find(function(a){return a.id===room.inv1;});inv1N=b1?b1.name:(room.inv1||"");}
+      if(!inv2N){var b2=(accounts||[]).find(function(a){return a.id===room.inv2;});inv2N=b2?b2.name:(room.inv2||"");}
+      html+="<div class=\"room\"><div class=\"rh\"><span>القاعة "+(room.room||("10"+(ri+1)))+" — لجنة "+(ri+1)+"</span><span>"+rs.length+" طالب</span></div>";
+      html+="<div class=\"ri\"><strong>المراقب الأول:</strong> "+(inv1N||"—")+"&nbsp;&nbsp;<strong>المراقب الثاني:</strong> "+(inv2N||"—")+"</div>";
+      html+="<table><thead><tr><th>#</th><th>اسم الطالب</th><th>الفصل</th></tr></thead><tbody>";
+      rs.forEach(function(s,idx){html+="<tr><td>"+(idx+1)+"</td><td>"+s.name+"</td><td>"+(s.section||s.grade||selGrade)+"</td></tr>";});
+      if(rs.length===0)html+="<tr><td colspan=\"3\" style=\"text-align:center;color:#aaa\">—</td></tr>";
+      html+="</tbody></table></div>";
+    });
+    html+="</body></html>";
+    var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print();},300);
+  },
+  style:{...btn("#1a2940","#fff","#1a2940"),marginBottom:8}
+},"🖨️ طباعة كشف القاعات"), curComm.map((room, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       ...cd,
