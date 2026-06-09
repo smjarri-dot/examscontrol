@@ -3498,6 +3498,7 @@ function AppMain({
     background: bg
   });
   const curStudents = students[stage]?.[selGrade] || [];
+  const allStageStudents = Object.entries(students[stage] || {}).flatMap(([g, list]) => (list||[]).map(s => ({...s, section: g})));
   const curSubjects = subjects[stage] || [];
   const curComm = committees[stage]?.[selGrade] || [];
   const curExams = getGradeExams(tpls, stage, selGrade);
@@ -4778,7 +4779,7 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
       maxHeight: 200,
       overflowY: "auto"
     }
-  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var k=String(key);if(!k.includes(':')){return curStudents.find(function(s){return String(s.id)===k;});};var parts=k.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
+  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var k=String(key);if(!k.includes(':')){return allStageStudents.find(function(s){return String(s.id)===k;});};var parts=k.split(":");var sec=parts[0];var sid=parts[1];return allStageStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):[]).map(st => /*#__PURE__*/React.createElement("span", {
     key: st.id,
     style: {
       fontSize: 11,
