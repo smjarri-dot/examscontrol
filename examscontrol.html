@@ -4773,17 +4773,18 @@ Object.values(committees).flatMap(function(st){return Object.values(st);}).flat(
   }, "\u0637\u0644\u0627\u0628 \u0627\u0644\u0642\u0627\u0639\u0629 (", selGrade, ")"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      flexWrap: "wrap",
-      gap: 6
+      flexDirection: "column",
+      gap: 2,
+      maxHeight: 200,
+      overflowY: "auto"
     }
-  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var k=String(key);if(!k.includes(':'))return null;var parts=k.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
+  }, (room.studentIds&&room.studentIds.length>0?room.studentIds.map(function(key){var k=String(key);if(!k.includes(':')){return curStudents.find(function(s){return String(s.id)===k;});};var parts=k.split(":");var sec=parts[0];var sid=parts[1];return curStudents.find(function(s){return s.section===sec&&String(s.id)===sid;});}).filter(Boolean):curStudents).map(st => /*#__PURE__*/React.createElement("span", {
     key: st.id,
     style: {
       fontSize: 11,
-      padding: "3px 10px",
-      background: "#fff",
-      border: "0.5px solid #e5e7eb",
-      borderRadius: 20
+      padding: "3px 8px",
+      background: "#f9fafb",
+      borderBottom: "0.5px solid #f3f4f6"
     }
   }, st.name))))))), tab === "invigilators" && (user?.role === "invigilator" ? /*#__PURE__*/React.createElement(InvigilatorView, {
     user: user,
